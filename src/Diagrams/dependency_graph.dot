@@ -1,0 +1,24 @@
+digraph G {
+    rankdir=LR;
+    node [shape=box, style=filled, color=lightblue];
+
+
+    run_forever [label="run_forever.sh", color=orange];
+    app [label="app.py", color=lightgreen];
+    tests [label="app_tests.py", color=orange];
+    db [label="whoknows.db", shape=cylinder, color=lightgoldenrod];
+    templates [label="templates", color=lightgoldenrod];
+    static [label="static", color=lightgoldenrod];
+    libraries [label="Libraries\n(Flask, Jinja2, Werkzeug)", shape=folder, color=lightgoldenrod];
+
+    run_forever -> app;       // shell script kører app.py
+    tests -> app;             // testscript afhænger af app.py
+    app -> templates;         // app.py loader templates
+    app -> static;            // app.py loader statiske filer (CSS, billeder)
+    app -> db;                // app.py læser/skriver database
+    app -> libraries;         // app.py bruger eksterne biblioteker
+    templates -> static;      // templates afhænger af CSS/images
+    
+    { rank=same; run_forever; tests }
+    { rank=same; templates; static; libraries; db }
+}
