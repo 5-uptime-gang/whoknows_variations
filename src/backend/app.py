@@ -1,4 +1,4 @@
-from __future__ import with_statement
+
 import os
 import sys
 import sqlite3
@@ -6,6 +6,8 @@ import hashlib
 from datetime import datetime
 from contextlib import closing
 from flask import Flask, request, session, url_for, redirect, render_template, g, flash, jsonify
+
+print("Running with Python", sys.version)   
 
 ################################################################################
 # Configuration
@@ -48,7 +50,7 @@ def init_db():
         with app.open_resource('../schema.sql') as f:
             db.cursor().executescript(f.read().decode('utf-8'))
         db.commit()
-        print "Initialized the database: " + str(DATABASE_PATH)
+        print("Initialized the database: " + str(DATABASE_PATH))
 
 
 def query_db(query, args=(), one=False):
