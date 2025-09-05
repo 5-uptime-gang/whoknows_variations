@@ -1,0 +1,71 @@
+body {
+  font-family: 'Orbitron', sans-serif;
+  background: #f9f9fb;
+  color: #222;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+nav {
+  display: flex;
+  justify-content: flex-end;
+  padding: 2rem 2rem;
+  background: #f9f9fb;
+}
+
+nav a {
+  display: flex;
+  margin-right: 1rem;
+  text-decoration: none;
+  color: #5a3d9a;
+  font-weight: 500;
+}
+
+div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+div h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #7c3aed;
+}
+
+.search-feild {
+  width: 50%;
+  padding: 0.5rem 0;
+  border: none;
+  border-bottom: 2px solid #a78bfa;
+  background: transparent;
+  font-size: 1.2rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-feild:focus {
+  border-bottom-color: #7c3aed;
+  box-shadow: 0 2px 0 0 #c4b5fd;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: #555;
+  background: #fafafa;
+  margin-top: auto;
+}
+
+footer a {
+  margin-left: 0.5rem;
+  color: #6d28d9;
+  text-decoration: none;
+}
