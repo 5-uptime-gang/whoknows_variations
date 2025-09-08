@@ -34,7 +34,7 @@ var users = []User{
 
 var nextUserID = 3
 
-// ==== API Routes ====
+// ==== API Endpoints ====
 
 func apiLogin(c *gin.Context) {
 	var creds struct {
