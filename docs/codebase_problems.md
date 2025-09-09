@@ -8,4 +8,5 @@
 - 
 
 ## Mindre problemer / kosmetiske 
-- 
+- mordernized styling
+- Doesnt work in mobile veiw
