@@ -126,6 +126,27 @@ func apiRegister(c *gin.Context) {
 	})
 }
 
+func apiLogout(c *gin.Context) {
+	// ingen logik/tilstand — bare et simpelt svar
+	c.JSON(http.StatusOK, gin.H{
+		"message": "logged out",
+		"status":  "ok",
+	})
+}
+
+func apiSearch(c *gin.Context) {
+	q := c.Query("q") // fx /api/search?q=kat
+	results := []gin.H{
+		{"id": "1", "title": "Example result 1"},
+		{"id": "2", "title": "Example result 2"},
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"query":   q,
+		"count":   len(results),
+		"results": results,
+	})
+}
+
 // ==== Main entry ====
 
 func main() {
@@ -134,6 +155,11 @@ func main() {
 
 	router.POST("/api/login", apiLogin)
 	router.POST("/api/register", apiRegister)
+
+	// nye, simple endpoints:
+	router.POST("/api/logout", apiLogout)
+	router.GET("/api/logout", apiLogout)
+	router.GET("/api/search", apiSearch)
 
 	router.Run("localhost:8080")
 }
