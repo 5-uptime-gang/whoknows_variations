@@ -5,6 +5,10 @@ How to run the server:
 2. Clone the repository: git clone https://github.com/5-uptime-gang/whoknows_variations.git 
 3. Navigate to the backend folder: cd /go_rewrite/src/backend 
 4. Run the server: go run . (or go run main.go to specify the file)
+4.1 Alternatively you can install air for development auto reloading.
+    - go install github.com/air-verse/air@latest
+    - go init
+4.2 run "Air" to run the project with auto reload
 
 
 Documentation: This project follows the Go REST API with Gin tutorial (https://go.dev/doc/tutorial/web-service-gin).

@@ -15,7 +15,7 @@ type Page struct {
     Content  string
 }
 
-func main() {
+func registerQueryRoutes() {
     db, err := sql.Open("sqlite", "whoknows.db")
     if err != nil {
         log.Fatalf("Failed to open database: %v", err)

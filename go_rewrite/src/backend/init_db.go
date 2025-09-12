@@ -7,7 +7,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func main() {
+func initDB() {
 	db, err := sql.Open("sqlite", "whoknows.db")
 	if err != nil {
 		log.Fatal(err)
