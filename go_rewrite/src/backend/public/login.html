@@ -15,10 +15,10 @@
   <body>
     <nav>
       <a href="/register">Register</a>
-      <a href="#">Log in</a>
+      <a href="/login">Log in</a>
     </nav>
 
-    <form class="register-container" action="/register" method="POST">
+    <form id="loginForm" class="register-container">
       <label>
         Username:
         <input type="text" name="username" required />
@@ -29,14 +29,55 @@
           type="password"
           name="password"
           required
-          autocomplete="new-password"
+          autocomplete="current-password"
         />
       </label>
 
+      <p id="errorMessage" style="color: red; display: none;"></p>
       <button type="submit">Register</button>
     </form>
 
     <footer><span>¿Who Knows? © 2009</span> <a href="#">about</a></footer>
   </body>
   <script src="js/index.js"></script>
+ <script>
+      document.getElementById('loginForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const formData = new FormData(form);
+          const errorMessage = document.getElementById('errorMessage');
+
+          let responseStatus; // Gem response status her
+
+          fetch('/api/login', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  username: formData.get('username'),
+                  password: formData.get('password')
+              })
+          })
+          .then(response => {
+              responseStatus = response.ok; // Gem response.ok
+              return response.json();
+          })
+          .then(data => {
+              if (responseStatus) { // Brug den gemte status
+                  // Login successful
+                  window.location.href = '/';
+              } else {
+                  // Show error message
+                  errorMessage.textContent = data.error || 'Login failed';
+                  errorMessage.style.display = 'block';
+              }
+          })
+          .catch(error => {
+              errorMessage.textContent = 'Error connecting to server';
+              errorMessage.style.display = 'block';
+              console.error('Error:', error);
+          });
+      });
+    </script>
 </html>

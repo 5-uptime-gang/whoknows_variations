@@ -2,18 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"log"
 
 	_ "modernc.org/sqlite"
 )
 
-func initDB() {
-	db, err := sql.Open("sqlite", "whoknows.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
+func InitDB(db *sql.DB) error {
 	schema := `
 	DROP TABLE IF EXISTS users;
 
@@ -35,8 +28,6 @@ func initDB() {
 		content TEXT NOT NULL
 	);`
 
-	_, err = db.Exec(schema)
-	if err != nil {
-		log.Fatal(err)
-	}
+	_, err := db.Exec(schema)
+    return err
 }
