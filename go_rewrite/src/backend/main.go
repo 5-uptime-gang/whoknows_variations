@@ -194,5 +194,5 @@ func main() {
     router.Static("/js", "./public/js")
     router.Static("/images", "./public/images") // or /img if you use that
 
-	router.Run("localhost:8080")
+	router.Run("68.221.201.252:8080") // we know this is not good :/ 
 }
