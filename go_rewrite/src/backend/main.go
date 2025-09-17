@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -147,19 +149,51 @@ func apiSearch(c *gin.Context) {
 	})
 }
 
+func serveLoginRegisterFiles(c *gin.Context, fp string) {
+	// Debug: confirm file exists and size
+	if info, err := filepath.Abs(fp); err == nil {
+		log.Println("Serving:", info)
+	}
+	// If it doesn't exist, Gin would 404. We'll log size after write below.
+
+	// Important: don't return before writing the body
+	c.File(fp) // sets 200 + streams file if found
+}
+
+func serveLoginFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "./public/login.html")
+}
+
+func serveRegisterFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "./public/register.html")
+}
+func serveIndexFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "./public/index.html")
+}
 // ==== Main entry ====
 
 func main() {
 	router := gin.Default()
 	fmt.Println("Starting server on http://localhost:8080")
+	
+    api := router.Group("/api")
+    {
+        api.POST("/login", apiLogin)
+        api.POST("/register", apiRegister)
+        api.GET("/logout", apiLogout)
+        api.POST("/logout", apiLogout)
+        api.GET("/search", apiSearch)
+    }
 
-	router.POST("/api/login", apiLogin)
-	router.POST("/api/register", apiRegister)
+    router.GET("/", serveIndexFile)
+	router.GET("/login", serveLoginFile)
+	router.GET("/register", serveRegisterFile)
 
-	// nye, simple endpoints:
-	router.POST("/api/logout", apiLogout)
-	router.GET("/api/logout", apiLogout)
-	router.GET("/api/search", apiSearch)
+	// Maps /css, /js, /images to ./public/css, ./public/js, ./public/images
+	// So it can be used in HTML like <link href="/css/styles.css">
+    router.Static("/css", "./public/css")
+    router.Static("/js", "./public/js")
+    router.Static("/images", "./public/images") // or /img if you use that
 
 	router.Run("localhost:8080")
 }
