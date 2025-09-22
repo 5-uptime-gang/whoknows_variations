@@ -3,7 +3,8 @@ name: Go Lint
 on:
   push:
     branches: [ main ]
-  pull_request: 
+  pull_request:
+    branches:
 
 jobs:
   golangci-lint:
@@ -14,7 +15,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Optional debug step
       - name: List repository files
         run: ls -R
 
@@ -24,10 +24,12 @@ jobs:
         with:
           go-version: '1.25.0'
 
-      # Step 3: Run golangci-lint with annotations
+      # Step 3: Install golangci-lint
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.5.0
+
+      # Step 4: Run golangci-lint in the subdirectory
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          working-directory: go_rewrite/src/backend
-          version: v2.5.0
-          fail-on-error: true
+        working-directory: go_rewrite/src/backend
+        run: golangci-lint run
