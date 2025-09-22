@@ -27,7 +27,7 @@ jobs:
       # Step 3: Install golangci-lint
       - name: Install golangci-lint
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.66.0
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.5.0
 
       # Step 4: Run golangci-lint in the subdirectory
       - name: Run golangci-lint
