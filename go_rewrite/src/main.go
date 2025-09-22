@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	// "regexp"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -78,38 +78,44 @@ func apiRegister(c *gin.Context) {
 		Password  string `json:"password"`
 		Password2 string `json:"password2"`
 	}
+
 	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
 	// Validation
-	// if form.Username == "" {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a username"})
-	// 	return
-	// }
-	// if form.Email == "" || !regexp.MustCompile(`.+@.+\..+`).MatchString(form.Email) {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a valid email address"})
-	// 	return
-	// }
-	// if form.Password == "" {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a password"})
-	// 	return
-	// }
-	// if form.Password != form.Password2 {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "the two passwords do not match"})
-	// 	return
-	// }
+	if form.Username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a username"})
+		return
+	}
+	if form.Email == "" || !regexp.MustCompile(`.+@.+\..+`).MatchString(form.Email) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a valid email address"})
+		return
+	}
+	if form.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a password"})
+		return
+	}
+	if form.Password != form.Password2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "the two passwords do not match"})
+		return
+	}
+
+	fmt.Println("username: ", form.Username)
+	fmt.Println("Email:", form.Email)
+	fmt.Println("password1: ", form.Password)
+	fmt.Println("password2: ", form.Password2)
 
 	// Hash password
-	// hash, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
-	// 	return
-	// }
+	hash, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
+		return
+	}
 
 	// Brug InsertUserQuery fra queries.go
-	userID, err := InsertUserQuery(db, form.Username, form.Email, form.Password)
+	userID, err := InsertUserQuery(db, form.Username, form.Email, string(hash))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "username or email already taken"})
 		return
@@ -172,13 +178,17 @@ func serveIndexFile(c *gin.Context) {
 // ==== Main entry ====
 
 func main() {
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing DB: %v", err)
+		}
+	}()
 	router := gin.Default()
 
-    var PORT string = "8080"
-    var ip string = "68.221.201.252"
+	var PORT string = "8080"
+	var ip string = "68.221.201.252"
 
-	fmt.Println("Starting server on http://",ip,":",PORT)
+	fmt.Println("Starting server on http://", ip, ":", PORT)
 
 	api := router.Group("/api")
 	{
@@ -199,5 +209,7 @@ func main() {
 	router.Static("/js", "./public/js")
 	router.Static("/images", "./public/images") // or /img if you use that
 
-	router.Run("localhost:8080") // we know this is not good :/
+	if err := router.Run(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
