@@ -25,6 +25,6 @@ jobs:
           version: v1.62.2
           working-directory: go_rewrite/src/backend
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          args: run --timeout=5m --out-format=colored-line-number ./...
+          args: --timeout=5m ./...
 
 
