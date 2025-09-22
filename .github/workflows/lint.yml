@@ -31,5 +31,5 @@ jobs:
 
       # Step 4: Run golangci-lint in the subdirectory
       - name: Run golangci-lint
-        working-directory: whoknows_variations/whoknows_variations/go_rewrite/src/backend
+        working-directory: go_rewrite/src/backend
         run: golangci-lint run --timeout=5m --out-format=colored-line-number
