@@ -25,6 +25,4 @@ jobs:
           version: v1.62.2
           working-directory: go_rewrite/src/backend
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          args: ./...
-
-
+          only-new-issues: false   # Make sure all issues are reported
