@@ -26,3 +26,4 @@ jobs:
           working-directory: go_rewrite/src/backend
           github-token: ${{ secrets.GITHUB_TOKEN }}
           only-new-issues: false   # Make sure all issues are reported
+          out-format: colored-line-number
