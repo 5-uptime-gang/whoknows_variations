@@ -9,24 +9,20 @@ jobs:
   golangci-lint:
     name: Run golangci-lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: go_rewrite/src/backend
     steps:
-      # Step 1: Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: List repository files
-        run: ls -R
-
-      # Step 2: Set up Go
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.0'
+          go-version: '1.23.0'
 
-      # Step 3: Run golangci-lint with GitHub integration
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.62.2   # latest stable that supports Go 1.25
+          version: v1.62.2
           working-directory: go_rewrite/src/backend
-          only-new-issues: true
