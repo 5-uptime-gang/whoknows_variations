@@ -185,10 +185,7 @@ func main() {
 	}()
 	router := gin.Default()
 
-	var PORT string = "8080"
-	var ip string = "68.221.201.252"
-
-	fmt.Println("Starting server on http://", ip, ":", PORT)
+	const PORT = ":8080"
 
 	api := router.Group("/api")
 	{
@@ -209,7 +206,7 @@ func main() {
 	router.Static("/js", "./public/js")
 	router.Static("/images", "./public/images") // or /img if you use that
 
-	if err := router.Run(":8080"); err != nil {
+	if err := router.Run(PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
