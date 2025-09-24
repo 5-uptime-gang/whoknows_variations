@@ -1,12 +1,25 @@
-First we wanted to create a new user that only has the rights to see the code and folders related to the deployment. Not the whole server.
+Deployment setup with a single user (adminuser)
 
-1. sudo useradd --system --home /srv/devopsuser --shell /usr/sbin/nologin devopsuser
+Use your existing VM user
+Instead of creating a new service account, we’ll just run and deploy everything as adminuser.
 
-Then setup deployment folders
-2. sudo mkdir -p /srv/devopsuser/releases /var/lib/devopsuser /var/log/devopsuser /etc/devopsuser
+1. Create deployment folders
 
-Give READ access to the newly created user.
-3. sudo chown -R devopsuser:devopsuser /srv/devopsuser /var/lib/devopsuser /var/log/devopsuser /etc/devopsuser
+sudo mkdir -p /srv/adminuser/releases /var/lib/adminuser /var/log/adminuser /etc/adminuser
+
+2. Give ownership to adminuser
+
+sudo chown -R adminuser:adminuser /srv/adminuser /var/lib/adminuser /var/log/adminuser /etc/adminuser
+
+3. What each folder is for
+
+/srv/adminuser/releases → built binaries + static frontend files (timestamped per deploy).
+
+/var/lib/adminuser → persistent data, e.g. whoknows.db.
+
+/var/log/adminuser → app logs.
+
+/etc/adminuser → config/env files.
 
 # Installing go on the server (This is to get the newest version)
 4. sudo add-apt-repository ppa:longsleep/golang-backports
