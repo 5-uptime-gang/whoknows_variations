@@ -31,5 +31,5 @@ jobs:
 
       # Step 4: Run golangci-lint in the subdirectory
       - name: Run golangci-lint
-        working-directory: go_rewrite/src/backend
+        working-directory: go_rewrite/src
         run: golangci-lint run
