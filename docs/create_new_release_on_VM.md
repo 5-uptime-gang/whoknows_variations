@@ -19,11 +19,11 @@ rsync -a ./public "$RDIR/"
 "/srv/adminuser/$RDIR/app"
 
 # For background run:
-nohup "$RDIR/app" > /srv/adminuser/app.log 2>&1 &
+nohup "$RDIR/app" > /var/log/adminuser/app.log 2>&1 &
 
-
+m
 # Then you can see the process running:
 ps aux | grep "app"
 
 # To Check the logs for the app:
-cat /srv/adminuser/app.log
+cat /var/log/adminuser/app.log
