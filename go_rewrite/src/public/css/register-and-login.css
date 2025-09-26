@@ -8,7 +8,7 @@
   padding: 2rem;
   background: #f9f9fb;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .register-container label {
@@ -32,7 +32,7 @@
 
 .register-container input:focus {
   border-bottom-color: #7c3aed;
-  box-shadow: 0 2px 0 0 #c4b5fd;    
+  box-shadow: 0 2px 0 0 #c4b5fd;
 }
 
 .register-container button {
@@ -51,7 +51,7 @@
 .register-container button:hover {
   background: #6d28d9;
   transform: translateY(-2px);
-} 
+}
 
 .register-container button:active {
   transform: translateY(0);

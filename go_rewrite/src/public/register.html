@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./css/styles.css" />
-    <link rel="stylesheet" href="./css/register.css" />
+    <link rel="stylesheet" href="./css/register-and-login.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"
       rel="stylesheet"
@@ -25,35 +25,25 @@
 
     <form class="register-container" action="/api/register" method="POST">
       <label>
-        Alias:
-        <input type="text" name="alias" required />
+        Username:
+        <input type="text" name="username" />
       </label>
       <label>
-        Username:
-        <input type="text" name="username" required />
+        Email:
+        <input type="text" name="email" />
       </label>
       <label>
         Password:
-        <input
-          type="password"
-          name="password"
-          required
-          autocomplete="new-password"
-        />
+        <input type="password" name="password" autocomplete="new-password" />
       </label>
       <label>
         Confirm Password:
-        <input
-          type="password"
-          name="password2"
-          required
-          autocomplete="new-password"
-        />
+        <input type="password" name="password2" autocomplete="new-password" />
       </label>
       <button type="submit">Register</button>
     </form>
 
-        <footer class="footer">
+    <footer class="footer">
       <span>¿Who Knows? © 2009</span>
       <a href="/about">about</a>
     </footer>
