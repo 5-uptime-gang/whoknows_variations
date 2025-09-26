@@ -1,10 +1,12 @@
 body {
-  font-family: 'Orbitron', sans-serif;
+  font-family: "Orbitron", sans-serif;
   background: #f9f9fb;
   color: #222;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 nav {
@@ -22,7 +24,7 @@ nav a {
   font-weight: 500;
 }
 
-div {
+.search-field {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -36,6 +38,25 @@ div h1 {
   font-size: 3rem;
   font-weight: 700;
   color: #7c3aed;
+}
+
+div.navigation {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.navigation nav {
+  width: 100%;
+  text-align: start;
+  justify-content: space-between;
+}
+
+.navigation nav .navigation-links {
+  display: flex;
+}
+
+.navigation nav h3 {
+  margin: 0;
 }
 
 .search-feild {

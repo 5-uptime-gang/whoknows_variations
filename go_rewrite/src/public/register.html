@@ -13,10 +13,15 @@
   </head>
 
   <body>
-    <nav>
-      <a href="#">Register</a>
-      <a href="/login">Log in</a>
-    </nav>
+    <div class="navigation">
+      <nav>
+        <h3><a id="nav-logo" href="/">¿Who Knows?</a></h3>
+        <div class="navigation-links">
+          <a id="nav-login" href="/register">Register</a>
+          <a id="nav-register" href="/login">Log in</a>
+        </div>
+      </nav>
+    </div>
 
     <form class="register-container" action="/api/register" method="POST">
       <label>
@@ -48,7 +53,10 @@
       <button type="submit">Register</button>
     </form>
 
-    <footer><span>¿Who Knows? © 2009</span> <a href="#">about</a></footer>
+        <footer class="footer">
+      <span>¿Who Knows? © 2009</span>
+      <a href="/about">about</a>
+    </footer>
   </body>
   <script src="js/index.js"></script>
 </html>
