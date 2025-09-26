@@ -23,7 +23,12 @@
       </nav>
     </div>
 
-    <form id="loginForm" class="register-container">
+    <form
+      id="loginForm"
+      class="register-container"
+      action="/api/login"
+      method="POST"
+    >
       <label>
         Username:
         <input type="text" name="username" required />
