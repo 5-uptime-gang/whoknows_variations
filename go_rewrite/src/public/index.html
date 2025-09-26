@@ -8,6 +8,7 @@
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"
       rel="stylesheet"
     />
+    <script src="./js/index.js"></script>
     <title>¿Who Knows?</title>
   </head>
 
@@ -22,9 +23,27 @@
       </nav>
     </div>
 
-    <div class="search-field">
+    <div class="search-container">
       <h1>¿Who Knows?</h1>
-      <input type="text" class="search-feild" placeholder="search..." />
+      <input
+        id="search-input"
+        type="text"
+        class="search-field"
+        placeholder="search..."
+      />
+      <button id="search-button">Search</button>
+    </div>
+
+    <div id="results">
+      <!-- For when there are search results: -->
+      <!-- <div>
+        <h2>
+          <a class="search-result-title" href="{{ result.url }}"
+            >{{ result.title }}</a
+          >
+        </h2>
+        <p class="search-result-description">{{ result.description }}</p>
+      </div> -->
     </div>
 
     <footer class="footer">
