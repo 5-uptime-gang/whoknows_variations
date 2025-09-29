@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches:
+    branches: [ main ]
 
 jobs:
   golangci-lint:
@@ -31,5 +31,5 @@ jobs:
 
       # Step 4: Run golangci-lint in the subdirectory
       - name: Run golangci-lint
-        working-directory: go_rewrite/src
-        run: golangci-lint run
+        working-directory: .
+        run: golangci-lint run ./cmd

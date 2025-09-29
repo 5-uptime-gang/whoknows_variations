@@ -11,6 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
+
+	
+
 )
 
 // ==== Users + Auth ====
@@ -165,14 +168,14 @@ func serveLoginRegisterFiles(c *gin.Context, fp string) {
 }
 
 func serveLoginFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/login.html")
+	serveLoginRegisterFiles(c, "../public/login.html")
 }
 
 func serveRegisterFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/register.html")
+	serveLoginRegisterFiles(c, "../public/register.html")
 }
 func serveIndexFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/index.html")
+	serveLoginRegisterFiles(c, "../public/index.html")
 }
 
 // ==== Main entry ====
@@ -202,9 +205,9 @@ func main() {
 
 	// Maps /css, /js, /images to ./public/css, ./public/js, ./public/images
 	// So it can be used in HTML like <link href="/css/styles.css">
-	router.Static("/css", "./public/css")
-	router.Static("/js", "./public/js")
-	router.Static("/images", "./public/images") // or /img if you use that
+	router.Static("/css", "../public/css")
+	router.Static("/js", "../public/js")
+	router.Static("/images", "../public/images") // or /img if you use that
 
 	if err := router.Run(PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
