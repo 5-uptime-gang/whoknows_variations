@@ -3,15 +3,17 @@ package main
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
 
 type Page struct {
-	ID       int
-	Title    string
-	Language string
-	Content  string
+    Title       string    `json:"title"`
+    URL         string    `json:"url"`
+    Language    string    `json:"language"`
+    LastUpdated time.Time `json:"last_updated"`
+    Content     string    `json:"content"`
 }
 
 func InsertUserQuery(db *sql.DB, username string, email string, password string) (int64, error) {
@@ -58,29 +60,33 @@ func GetUserByUsernameQuery(db *sql.DB, username string) (int, string, string, s
 }
 
 func SearchPagesQuery(db *sql.DB, searchTerm string, language string) ([]Page, error) {
-	query := "SELECT * FROM pages WHERE language = ? AND content LIKE ?"
-	rows, err := db.Query(query, language, "%"+searchTerm+"%")
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("Error closing rows: %v", err)
-		}
-	}()
+    query := "SELECT title, url, language, last_updated, content FROM pages WHERE language = ?"
+    args := []interface{}{language}
 
-	var pages []Page
-	for rows.Next() {
-		var page Page
-		err := rows.Scan(&page.ID, &page.Title, &page.Language, &page.Content)
-		if err != nil {
-			log.Printf("SearchPagesQuery row scan error: %v", err)
-			continue
-		}
-		pages = append(pages, page)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return pages, nil
+    if searchTerm != "" {
+        query += " AND content LIKE ?"
+        args = append(args, "%"+searchTerm+"%")
+    }
+
+    rows, err := db.Query(query, args...)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var pages []Page
+    for rows.Next() {
+        var page Page
+        err := rows.Scan(&page.Title, &page.URL, &page.Language, &page.LastUpdated, &page.Content)
+        if err != nil {
+            log.Printf("SearchPagesQuery row scan error: %v", err)
+            continue
+        }
+        pages = append(pages, page)
+    }
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+    return pages, nil
 }
+
