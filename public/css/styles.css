@@ -24,6 +24,10 @@ nav a {
   font-weight: 500;
 }
 
+#nav-logout {
+  display: none;
+}
+
 .search-container {
   flex: 1;
   display: flex;

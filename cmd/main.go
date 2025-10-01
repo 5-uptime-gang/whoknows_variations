@@ -1,6 +1,7 @@
 package main
 
 import (
+	"WHOKNOWS_VARIATIONS/util"
 	"database/sql"
 	"fmt"
 	"log"
@@ -11,9 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
-
-	
-
 )
 
 // ==== Users + Auth ====
@@ -65,6 +63,8 @@ func apiLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
 		return
 	}
+
+	util.SetAuthCookie(c, id)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "login successful",
@@ -124,6 +124,8 @@ func apiRegister(c *gin.Context) {
 		return
 	}
 
+	util.SetAuthCookie(c, int(userID))
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "user registered successfully",
 		"user_id": userID,
@@ -131,7 +133,9 @@ func apiRegister(c *gin.Context) {
 }
 
 func apiLogout(c *gin.Context) {
-	// ingen logik/tilstand — bare et simpelt svar
+	// overwrite cookie with empty value and expired time
+	util.RemoveAuthCookie(c)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged out",
 		"status":  "ok",
@@ -154,6 +158,15 @@ func apiSearch(c *gin.Context) {
 		"count":   len(results),
 		"results": results,
 	})
+}
+
+func apiSession(c *gin.Context) {
+	_, err := c.Cookie("user_id")
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"logged_in": false})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"logged_in": true})
 }
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
@@ -197,6 +210,7 @@ func main() {
 		api.GET("/logout", apiLogout)
 		api.POST("/logout", apiLogout)
 		api.GET("/search", apiSearch)
+		api.GET("/session", apiSession)
 	}
 
 	router.GET("/", serveIndexFile)

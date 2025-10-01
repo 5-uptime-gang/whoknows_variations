@@ -1,13 +1,37 @@
-let searchInput;
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch("/api/session", { credentials: "include" });
+    const data = await res.json();
 
-document.addEventListener("DOMContentLoaded", () => {
+    if (data.logged_in) {
+      document.getElementById("nav-logout").style.display = "inline-block";
+      document.getElementById("nav-login").style.display = "none";
+      document.getElementById("nav-register").style.display = "none";
+    } else {
+      document.getElementById("nav-logout").style.display = "none";
+      document.getElementById("nav-login").style.display = "inline-block";
+      document.getElementById("nav-register").style.display = "inline-block";
+    }
+  } catch (err) {
+    console.error("session check failed", err);
+  }
+
+  // logout button click
+  document.getElementById("nav-logout").addEventListener("click", async (e) => {
+    e.preventDefault();
+    await fetch("/api/logout", { method: "POST", credentials: "include" });
+    location.reload();
+  });
+
+  let searchInput;
+
   searchInput = document.getElementById("search-input");
 
   // Focus the input field
-  searchInput.focus();
+  searchInput?.focus();
 
   // Search when the user presses Enter
-  searchInput.addEventListener("keypress", (event) => {
+  searchInput?.addEventListener("keypress", (event) => {
     if (event.key === "Enter") {
       // makeSearchRequest();
     }
