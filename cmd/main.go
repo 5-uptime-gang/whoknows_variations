@@ -1,19 +1,48 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
+)
 
-	
+// ==== Weather types + tiny cache ====
+type wxDaily struct {
+	Date string  `json:"date"`
+	TMin float64 `json:"tMin"`
+	TMax float64 `json:"tMax"`
+	Code int     `json:"code"`
+}
+type wxOut struct {
+	Source   string    `json:"source"`
+	Updated  string    `json:"updated"`
+	Timezone string    `json:"timezone"`
+	Days     []wxDaily `json:"daily"`
+}
 
+type cacheEntry struct {
+	payload []byte
+	expires time.Time
+}
+
+var (
+	wxCache = struct {
+		mu sync.RWMutex
+		m  map[string]cacheEntry
+	}{m: make(map[string]cacheEntry)}
+	cacheTTL = 15 * time.Minute
 )
 
 // ==== Users + Auth ====
@@ -156,6 +185,102 @@ func apiSearch(c *gin.Context) {
 	})
 }
 
+func apiWeather(c *gin.Context) {
+	lat := c.Query("lat")
+	lon := c.Query("lon")
+	if lat == "" || lon == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing lat/lon"})
+		return
+	}
+	days := c.DefaultQuery("days", "5")
+	units := c.DefaultQuery("units", "metric")
+	key := lat + "|" + lon + "|" + days + "|" + units
+
+	// 1) cache check
+	wxCache.mu.RLock()
+	ce, ok := wxCache.m[key]
+	wxCache.mu.RUnlock()
+	if ok && time.Now().Before(ce.expires) {
+		c.Header("X-Cache", "HIT")
+		c.Data(http.StatusOK, "application/json", ce.payload)
+		return
+	}
+
+	// 2) call Open-Meteo
+	url := buildOpenMeteoURL(lat, lon, days, units)
+	req, _ := http.NewRequest("GET", url, nil)
+	// A polite UA (and useful if you later add MET Norway which requires it)
+	req.Header.Set("User-Agent", "who-knows-weather/1.0 (+contact: you@example.com)")
+
+	ctx, cancel := context.WithTimeout(c, 5*time.Second)
+	defer cancel()
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil || resp.StatusCode >= 500 {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
+		return
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
+
+	// 3) normalize provider JSON to our tiny shape
+	out, tz, err := normalizeOpenMeteo(raw)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "normalize failed"})
+		return
+	}
+	out.Source = "open-meteo"
+	out.Updated = time.Now().UTC().Format(time.RFC3339)
+	out.Timezone = tz
+
+	payload, _ := json.Marshal(out)
+
+	// 4) cache + return
+	wxCache.mu.Lock()
+	wxCache.m[key] = cacheEntry{payload: payload, expires: time.Now().Add(cacheTTL)}
+	wxCache.mu.Unlock()
+
+	c.Header("X-Cache", "MISS")
+	c.Data(http.StatusOK, "application/json", payload)
+}
+
+func buildOpenMeteoURL(lat, lon, days, units string) string {
+	tempUnit := "celsius"
+	if units == "imperial" {
+		tempUnit = "fahrenheit"
+	}
+	// daily fields: weather code + min/max temps; timezone auto
+	return fmt.Sprintf(
+		"https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&timezone=auto&daily=weathercode,temperature_2m_max,temperature_2m_min&forecast_days=%s&temperature_unit=%s",
+		lat, lon, days, tempUnit)
+}
+
+type omResp struct {
+	Daily struct {
+		Time        []string  `json:"time"`
+		WeatherCode []int     `json:"weathercode"`
+		TempMax     []float64 `json:"temperature_2m_max"`
+		TempMin     []float64 `json:"temperature_2m_min"`
+	} `json:"daily"`
+	Timezone string `json:"timezone"`
+}
+
+func normalizeOpenMeteo(raw []byte) (wxOut, string, error) {
+	var r omResp
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return wxOut{}, "", err
+	}
+	out := wxOut{}
+	for i := range r.Daily.Time {
+		out.Days = append(out.Days, wxDaily{
+			Date: r.Daily.Time[i],
+			TMin: r.Daily.TempMin[i],
+			TMax: r.Daily.TempMax[i],
+			Code: r.Daily.WeatherCode[i],
+		})
+	}
+	return out, r.Timezone, nil
+}
+
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
 	// Debug: confirm file exists and size
 	if info, err := filepath.Abs(fp); err == nil {
@@ -197,6 +322,7 @@ func main() {
 		api.GET("/logout", apiLogout)
 		api.POST("/logout", apiLogout)
 		api.GET("/search", apiSearch)
+		api.GET("/weather", apiWeather)
 	}
 
 	router.GET("/", serveIndexFile)
