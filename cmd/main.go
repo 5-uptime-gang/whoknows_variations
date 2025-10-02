@@ -170,6 +170,15 @@ func apiSearch(c *gin.Context) {
     })
 }
 
+func apiSession(c *gin.Context) {
+	_, err := c.Cookie("user_id")
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"logged_in": false})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"logged_in": true})
+}
+
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
 	// Debug: confirm file exists and size
