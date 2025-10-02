@@ -42,16 +42,24 @@ func InitDB(db *sql.DB) error {
 	}
 
 	// bruger prepared statement til at indsætte dataen
-	tx, err := db.Begin()
+	transaction, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO pages (title, url, language, last_updated, content) VALUES (?, ?, ?, ?, ?)`)
+	insertPageStmt, err := transaction.Prepare(`INSERT OR IGNORE INTO pages (title, url, language, last_updated, content) VALUES (?, ?, ?, ?, ?)`)
 	if err != nil {
-		tx.Rollback()
+		if rbErr := transaction.Rollback(); rbErr != nil {
+			log.Printf("rollback failed: %v", rbErr)
+		}
 		return err
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if err := insertPageStmt.Close(); err != nil {
+			log.Printf("stmt.Close failed: %v", err)
+		}
+	}()
+	// defer stmt.Close()
 
 	seedData := []struct {
 		Title   string
@@ -83,7 +91,7 @@ func InitDB(db *sql.DB) error {
 			Lang:    "da",
 			Content: "SQL bruges til at hente og manipulere data i databaser. Eksempler inkluderer SELECT, INSERT, UPDATE og DELETE forespørgsler.",
 		},
-				{
+		{
 			Title:   "Python Basics",
 			URL:     "https://docs.python.org/3/tutorial/",
 			Lang:    "en",
@@ -203,17 +211,16 @@ func InitDB(db *sql.DB) error {
 			Lang:    "da",
 			Content: "Maskinlæring er en gren af kunstig intelligens, hvor algoritmer trænes til at finde mønstre i data.",
 		},
-
 	}
 
 	for _, p := range seedData {
-		if _, err := stmt.Exec(p.Title, p.URL, p.Lang, time.Now(), p.Content); err != nil {
+		if _, err := insertPageStmt.Exec(p.Title, p.URL, p.Lang, time.Now(), p.Content); err != nil {
 			// Vi logger fejl, men fortsætter med næste række
 			log.Printf("Error inserting seed data (%s): %v", p.Title, err)
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := transaction.Commit(); err != nil {
 		return err
 	}
 
