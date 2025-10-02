@@ -1,3 +1,13 @@
+.weather-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+
 /* Container for the forecast list */
 .forecast {
   background: #fff;
