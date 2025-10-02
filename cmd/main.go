@@ -143,31 +143,33 @@ func apiLogout(c *gin.Context) {
 }
 
 func apiSearch(c *gin.Context) {
-	q := c.Query("q")
-	lang := c.DefaultQuery("lang", "en") // Default til engelsk hvis ikke specificeret
+    q := c.Query("q")
+    if q == "" {
+        // q er obligatorisk ifølge openAPI - derfor skal der bruges q i URL hvis man ønsker at finde noget.
+        c.JSON(422, gin.H{
+            "statusCode": 422,
+            "message":    "Query parameter 'q' is required",
+        })
+        return
+    }
 
-	// Brug SearchPagesQuery fra queries.go
-	results, err := SearchPagesQuery(db, q, lang)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
-		return
-	}
+    lang := c.DefaultQuery("language", "en") // Default til engelsk
 
-	c.JSON(http.StatusOK, gin.H{
-		"query":   q,
-		"count":   len(results),
-		"results": results,
-	})
+    results, err := SearchPagesQuery(db, q, lang)
+    if err != nil {
+        // Hvis search fejler returnerer vi 422
+        c.JSON(422, gin.H{
+            "statusCode": 422,
+            "message":    "Search failed: " + err.Error(),
+        })
+        return
+    }
+
+    c.JSON(200, gin.H{
+        "data": results,
+    })
 }
 
-func apiSession(c *gin.Context) {
-	_, err := c.Cookie("user_id")
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"logged_in": false})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"logged_in": true})
-}
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
 	// Debug: confirm file exists and size
