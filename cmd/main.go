@@ -198,6 +198,11 @@ func serveLoginFile(c *gin.Context) {
 func serveRegisterFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "../public/register.html")
 }
+
+func serverWeatherFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "../public/weather.html")
+}
+
 func serveIndexFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "../public/index.html")
 }
@@ -227,6 +232,7 @@ func main() {
 	router.GET("/", serveIndexFile)
 	router.GET("/login", serveLoginFile)
 	router.GET("/register", serveRegisterFile)
+	router.GET("/weather", serverWeatherFile)
 
 	// Maps /css, /js, /images to ./public/css, ./public/js, ./public/images
 	// So it can be used in HTML like <link href="/css/styles.css">

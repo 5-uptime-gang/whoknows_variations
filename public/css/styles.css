@@ -28,22 +28,6 @@ nav a {
   display: none;
 }
 
-.search-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  gap: 1.5rem;
-}
-
-div h1 {
-  font-size: 3rem;
-  font-weight: 700;
-  color: #7c3aed;
-}
-
 div.navigation {
   display: flex;
   justify-content: flex-start;
@@ -61,6 +45,22 @@ div.navigation {
 
 .navigation nav h3 {
   margin: 0;
+}
+
+div h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #7c3aed;
+}
+
+.search-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
 }
 
 .search-field {

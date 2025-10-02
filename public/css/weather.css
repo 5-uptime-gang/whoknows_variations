@@ -1,0 +1,50 @@
+/* Container for the forecast list */
+.forecast {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 75vw;
+  margin-top: 1rem;
+}
+
+/* Each day card */
+.weather-day {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 1rem;
+}
+
+.weather-day:last-child {
+  border-bottom: none;
+}
+
+/* Date label */
+.weather-day .date {
+  font-weight: 600;
+  color: #5a3d9a;
+}
+
+/* Temps in the middle */
+.weather-day .temps {
+  color: #333;
+  font-size: 1rem;
+}
+
+/* Weather code text */
+.weather-day .code {
+  font-size: 0.9rem;
+  color: #777;
+}
+
+/* Footer below the forecast box */
+.forecast-footer {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #555;
+}

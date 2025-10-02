@@ -7,11 +7,10 @@ import (
 )
 
 func SetAuthCookie(c *gin.Context, userID int) {
-    maxAge := 60 * 60 * 24 * 365 // 1 year
     c.SetCookie(
         "user_id",
         fmt.Sprintf("%d", userID),
-        maxAge,
+        0, // maxAge in seconds; 0 means session cookie
         "/",
         "",
         true,  // secure
@@ -23,7 +22,7 @@ func RemoveAuthCookie(c *gin.Context) {
     c.SetCookie(
         "user_id",
         "",
-        -1,
+        -1, // maxAge in seconds; -1 means delete cookie
         "/",
         "",
         true,  // secure
