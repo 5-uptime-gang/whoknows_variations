@@ -9,11 +9,11 @@ import (
 )
 
 type Page struct {
-    Title       string    `json:"title"`
-    URL         string    `json:"url"`
-    Language    string    `json:"language"`
-    LastUpdated time.Time `json:"last_updated"`
-    Content     string    `json:"content"`
+	Title       string    `json:"title"`
+	URL         string    `json:"url"`
+	Language    string    `json:"language"`
+	LastUpdated time.Time `json:"last_updated"`
+	Content     string    `json:"content"`
 }
 
 func InsertUserQuery(db *sql.DB, username string, email string, password string) (int64, error) {
@@ -60,33 +60,36 @@ func GetUserByUsernameQuery(db *sql.DB, username string) (int, string, string, s
 }
 
 func SearchPagesQuery(db *sql.DB, searchTerm string, language string) ([]Page, error) {
-    query := "SELECT title, url, language, last_updated, content FROM pages WHERE language = ?"
-    args := []interface{}{language}
+	query := "SELECT title, url, language, last_updated, content FROM pages WHERE language = ?"
+	args := []interface{}{language}
 
-    if searchTerm != "" {
-        query += " AND content LIKE ?"
-        args = append(args, "%"+searchTerm+"%")
-    }
+	if searchTerm != "" {
+		query += " AND content LIKE ?"
+		args = append(args, "%"+searchTerm+"%")
+	}
 
-    rows, err := db.Query(query, args...)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("rows.Close failed: %v", err)
+		}
+	}()
 
-    var pages []Page
-    for rows.Next() {
-        var page Page
-        err := rows.Scan(&page.Title, &page.URL, &page.Language, &page.LastUpdated, &page.Content)
-        if err != nil {
-            log.Printf("SearchPagesQuery row scan error: %v", err)
-            continue
-        }
-        pages = append(pages, page)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    return pages, nil
+	var pages []Page
+	for rows.Next() {
+		var page Page
+		err := rows.Scan(&page.Title, &page.URL, &page.Language, &page.LastUpdated, &page.Content)
+		if err != nil {
+			log.Printf("SearchPagesQuery row scan error: %v", err)
+			continue
+		}
+		pages = append(pages, page)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return pages, nil
 }
-
