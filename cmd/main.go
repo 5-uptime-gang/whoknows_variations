@@ -219,7 +219,11 @@ func apiWeather(c *gin.Context) {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error closing response body: %v", err)
+		}
+	}()
 	raw, _ := io.ReadAll(resp.Body)
 
 	// 3) normalize provider JSON to our tiny shape
