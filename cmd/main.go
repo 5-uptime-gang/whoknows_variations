@@ -11,9 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
-
-	
-
 )
 
 // ==== Users + Auth ====
@@ -205,7 +202,6 @@ func main() {
 	{
 		api.POST("/login", apiLogin)
 		api.POST("/register", apiRegister)
-		api.GET("/logout", apiLogout)
 		api.POST("/logout", apiLogout)
 		api.GET("/search", apiSearch)
 	}
