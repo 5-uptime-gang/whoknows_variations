@@ -200,11 +200,11 @@ func serveRegisterFile(c *gin.Context) {
 }
 
 func serverWeatherFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/weather.html")
+	serveLoginRegisterFiles(c, "./public/weather.html")
 }
 
 func serverAboutFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/about.html")
+	serveLoginRegisterFiles(c, "./public/about.html")
 }
 
 func serveIndexFile(c *gin.Context) {
@@ -238,11 +238,11 @@ func main() {
 	router.GET("/weather", serverWeatherFile)
 	router.GET("/about", serverAboutFile)
 
-	// Maps /css, /js, /images to ./public/css, ./public/js, ./public/images
-	// So it can be used in HTML like <link href="/css/styles.css">
-	router.Static("/css", "./public/css")
-	router.Static("/js", "./public/js")
-	router.Static("/images", "./public/images") // or /img if you use that
+	// Serve static files from the "public" directory
+	fs := http.FileServer(http.Dir("public"))
+
+	// StripPrefix is optional: only needed if you mount it on a subpath
+	http.Handle("/", fs)
 
 	if err := router.Run(PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
