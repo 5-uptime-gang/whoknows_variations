@@ -28,9 +28,7 @@ async function doSearch(query, language = null) {
     }
 
     // GET request
-    const res = await fetch(url, {
-      method: "GET",
-    });
+    const res = await fetch(url, { method: "GET" });
 
     if (!res.ok) {
       throw new Error(`Search failed with status ${res.status}`);
@@ -46,25 +44,46 @@ async function doSearch(query, language = null) {
       data.data.forEach((page) => {
         const wrapper = document.createElement("div");
 
-        wrapper.innerHTML = `
-          <h2>
-            <a class="search-result-title" href="${page.url}">
-              ${page.title}
-            </a>
-          </h2>
-          <p class="search-result-description">${page.content}</p>
-          <p><strong>Language:</strong> ${page.language}</p>
-          <p><strong>Last updated:</strong> ${new Date(
-            page.last_updated
-          ).toLocaleString()}</p>
-        `;
+        // Title
+        const h2 = document.createElement("h2");
+        const link = document.createElement("a");
+        link.className = "search-result-title";
+        link.setAttribute("href", page.url);
+        link.textContent = page.title;
+        h2.appendChild(link);
+
+        // Content snippet
+        const desc = document.createElement("p");
+        desc.className = "search-result-description";
+        desc.textContent = page.content;
+
+        // Language
+        const lang = document.createElement("p");
+        lang.textContent = `Language: ${page.language}`;
+
+        // Last updated
+        const updated = document.createElement("p");
+        updated.textContent = `Last updated: ${new Date(
+          page.last_updated
+        ).toLocaleString()}`;
+
+        wrapper.appendChild(h2);
+        wrapper.appendChild(desc);
+        wrapper.appendChild(lang);
+        wrapper.appendChild(updated);
 
         resultsContainer.appendChild(wrapper);
       });
     } else {
-      resultsContainer.innerHTML = "<p>No results found.</p>";
+      const noResults = document.createElement("p");
+      noResults.textContent = "No results found.";
+      resultsContainer.appendChild(noResults);
     }
   } catch (err) {
-    resultsContainer.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+    resultsContainer.innerHTML = "";
+    const errorP = document.createElement("p");
+    errorP.style.color = "red";
+    errorP.textContent = `Error: ${err.message}`;
+    resultsContainer.appendChild(errorP);
   }
 }
