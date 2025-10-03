@@ -7,6 +7,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -v -o /usr/local/bin/app ./...
+
+# build the main app from /cmd
+RUN go build -v -o /usr/local/bin/app ./cmd
 
 CMD ["app"]
