@@ -1,6 +1,7 @@
 package main
 
 import (
+	"WHOKNOWS_VARIATIONS/util"
 	"database/sql"
 	"fmt"
 	"log"
@@ -63,6 +64,8 @@ func apiLogin(c *gin.Context) {
 		return
 	}
 
+	util.SetAuthCookie(c, id)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "login successful",
 		"user_id":  id,
@@ -121,6 +124,8 @@ func apiRegister(c *gin.Context) {
 		return
 	}
 
+	util.SetAuthCookie(c, int(userID))
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "user registered successfully",
 		"user_id": userID,
@@ -128,7 +133,9 @@ func apiRegister(c *gin.Context) {
 }
 
 func apiLogout(c *gin.Context) {
-	// ingen logik/tilstand — bare et simpelt svar
+	// overwrite cookie with empty value and expired time
+	util.RemoveAuthCookie(c)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged out",
 		"status":  "ok",
@@ -163,6 +170,15 @@ func apiSearch(c *gin.Context) {
     })
 }
 
+func apiSession(c *gin.Context) {
+	_, err := c.Cookie("user_id")
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"logged_in": false})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"logged_in": true})
+}
+
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
 	// Debug: confirm file exists and size
@@ -182,6 +198,15 @@ func serveLoginFile(c *gin.Context) {
 func serveRegisterFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "../public/register.html")
 }
+
+func serverWeatherFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "../public/weather.html")
+}
+
+func serverAboutFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "../public/about.html")
+}
+
 func serveIndexFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "../public/index.html")
 }
@@ -204,11 +229,14 @@ func main() {
 		api.POST("/register", apiRegister)
 		api.POST("/logout", apiLogout)
 		api.GET("/search", apiSearch)
+		api.GET("/session", apiSession)
 	}
 
 	router.GET("/", serveIndexFile)
 	router.GET("/login", serveLoginFile)
 	router.GET("/register", serveRegisterFile)
+	router.GET("/weather", serverWeatherFile)
+	router.GET("/about", serverAboutFile)
 
 	// Maps /css, /js, /images to ./public/css, ./public/js, ./public/images
 	// So it can be used in HTML like <link href="/css/styles.css">

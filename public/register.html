@@ -17,8 +17,10 @@
       <nav>
         <h3><a id="nav-logo" href="/">¿Who Knows?</a></h3>
         <div class="navigation-links">
-          <a id="nav-login" href="/register">Register</a>
-          <a id="nav-register" href="/login">Log in</a>
+          <a id="nav-weather" href="/weather">Weather</a>
+          <a id="nav-logout" href="/api/logout">Log out</a>
+          <a id="nav-register" href="/register">Register</a>
+          <a id="nav-login" href="/login">Log in</a>
         </div>
       </nav>
     </div>
@@ -40,6 +42,7 @@
         Confirm Password:
         <input type="password" name="password2" autocomplete="new-password" />
       </label>
+      <p id="errorMessage" style="color: red; display: none"></p>
       <button type="submit">Register</button>
     </form>
 
@@ -47,6 +50,8 @@
       <span>¿Who Knows? © 2009</span>
       <a href="/about">about</a>
     </footer>
+
+    <script src="./js/navbar.js"></script>
+    <script src="./js/register.js"></script>
   </body>
-  <script src="js/index.js"></script>
 </html>
