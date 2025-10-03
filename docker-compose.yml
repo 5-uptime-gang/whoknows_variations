@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  whoknows_variations:
+    image: whoknows_variations
+    build: .
+    ports:
+      - "8080:8080"
+    restart: unless-stopped # genstarter container automatisk ved crash
+
+    
