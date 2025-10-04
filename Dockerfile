@@ -10,12 +10,12 @@ RUN go mod download
 COPY . .
 
 # Build binary as root user
-RUN go build -o /usr/local/bin/whoknows_variations ./cmd
-
 # Create data dir and non-root user
-RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup \
-    && mkdir -p /usr/src/app/data \
-    && chown -R appuser:appgroup /usr/src/app
+RUN go build -o /usr/local/bin/whoknows_variations ./cmd && \
+    addgroup --system appgroup && \
+    adduser --system appuser --ingroup appgroup && \
+    mkdir -p /usr/src/app/data && \
+    chown -R appuser:appgroup /usr/src/app
 
 # Switch to non-root user
 USER appuser
