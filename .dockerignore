@@ -1,0 +1,27 @@
+# Version control
+.git
+.gitignore
+
+# Binary output
+bin/
+*.exe
+*.out
+
+# Editor/IDE filer
+*.swp
+*.vscode/
+.idea/
+
+
+# Logs / temp
+*.log
+tmp/
+
+
+Dockerfile*
+docker-compose*
+.air.toml
+
+.env
+
+docs/

@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./css/styles.css" />
+    <link rel="stylesheet" href="/public/css/styles.css" />
+    <link rel="stylesheet" href="/public/css/index.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"
       rel="stylesheet"
     />
-    <script src="./js/index.js"></script>
     <title>¿Who Knows?</title>
   </head>
 
@@ -17,8 +17,10 @@
       <nav>
         <h3><a id="nav-logo" href="/">¿Who Knows?</a></h3>
         <div class="navigation-links">
-          <a id="nav-login" href="/register">Register</a>
-          <a id="nav-register" href="/login">Log in</a>
+          <a id="nav-weather" href="/weather">Weather</a>
+          <a id="nav-logout" href="/api/logout">Log out</a>
+          <a id="nav-register" href="/register">Register</a>
+          <a id="nav-login" href="/login">Log in</a>
         </div>
       </nav>
     </div>
@@ -35,15 +37,7 @@
     </div>
 
     <div id="results">
-      <!-- For when there are search results: -->
-      <!-- <div>
-        <h2>
-          <a class="search-result-title" href="{{ result.url }}"
-            >{{ result.title }}</a
-          >
-        </h2>
-        <p class="search-result-description">{{ result.description }}</p>
-      </div> -->
+      <!-- Search results will be displayed here -->
     </div>
 
     <footer class="footer">
@@ -51,5 +45,6 @@
       <a href="/about">about</a>
     </footer>
   </body>
-  <script src="js/index.js"></script>
+  <script src="/public/js/navbar.js"></script>
+  <script src="/public/js/index.js"></script>
 </html>

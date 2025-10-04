@@ -4,15 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/public/css/styles.css" />
-    <link rel="stylesheet" href="/public/css/register-and-login.css" />
+    <link rel="stylesheet" href="/public/css/weather.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"
       rel="stylesheet"
     />
-    <title>¿Who Knows?</title>
+    <title>Weather Forecast</title>
   </head>
 
   <body>
+    <!-- Navigation -->
     <div class="navigation">
       <nav>
         <h3><a id="nav-logo" href="/">¿Who Knows?</a></h3>
@@ -25,33 +26,21 @@
       </nav>
     </div>
 
-    <form class="register-container" action="/api/register" method="POST">
-      <label>
-        Username:
-        <input type="text" name="username" />
-      </label>
-      <label>
-        Email:
-        <input type="text" name="email" />
-      </label>
-      <label>
-        Password:
-        <input type="password" name="password" autocomplete="new-password" />
-      </label>
-      <label>
-        Confirm Password:
-        <input type="password" name="password2" autocomplete="new-password" />
-      </label>
-      <p id="errorMessage" style="color: red; display: none"></p>
-      <button type="submit">Register</button>
-    </form>
+    <!-- Weather Section -->
+    <div class="weather-container">
+      <h1>Weather Forecast</h1>
+      <div class="forecast" id="weather-container">
+        <p>Loading weather data...</p>
+      </div>
+    </div>
 
+    <!-- Footer -->
     <footer class="footer">
       <span>¿Who Knows? © 2009</span>
       <a href="/about">about</a>
     </footer>
 
     <script src="/public/js/navbar.js"></script>
-    <script src="/public/js/register.js"></script>
+    <script src="/public/js/weather.js"></script>
   </body>
 </html>

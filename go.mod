@@ -1,4 +1,4 @@
-module go_rewrite
+module WHOKNOWS_VARIATIONS
 
 go 1.25.0
 

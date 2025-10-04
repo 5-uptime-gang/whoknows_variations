@@ -1,19 +1,18 @@
 package main
 
 import (
+	"WHOKNOWS_VARIATIONS/util"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
-
-	
-
 )
 
 // ==== Users + Auth ====
@@ -29,17 +28,29 @@ type User struct {
 var db *sql.DB
 
 func init() {
-	var err error
-	db, err = sql.Open("sqlite", "whoknows.db")
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+	const dbPath = "/usr/src/app/data/whoknows.db"
+
+	// If the DB file doesn't exist, we'll need to initialize it
+	dbExists := true
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		dbExists = false
 	}
 
-	// Initialize database schema
-	if err := InitDB(db); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+	var err error
+	db, err = sql.Open("sqlite", dbPath)
+	if err != nil {
+		log.Fatalf("Failed to open database at %s: %v", dbPath, err)
 	}
-	log.Println("Database initialized successfully")
+
+	if !dbExists {
+		log.Println("Database not found — initializing schema and seed data...")
+		if err := InitDB(db); err != nil {
+			log.Fatalf("Failed to initialize database: %v", err)
+		}
+		log.Println("Database initialized successfully")
+	} else {
+		log.Println("Database already exists — skipping initialization")
+	}
 }
 
 // ==== API Endpoints ====
@@ -65,6 +76,8 @@ func apiLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
 		return
 	}
+
+	util.SetAuthCookie(c, id)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "login successful",
@@ -124,6 +137,8 @@ func apiRegister(c *gin.Context) {
 		return
 	}
 
+	util.SetAuthCookie(c, int(userID))
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "user registered successfully",
 		"user_id": userID,
@@ -131,7 +146,9 @@ func apiRegister(c *gin.Context) {
 }
 
 func apiLogout(c *gin.Context) {
-	// ingen logik/tilstand — bare et simpelt svar
+	// overwrite cookie with empty value and expired time
+	util.RemoveAuthCookie(c)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged out",
 		"status":  "ok",
@@ -140,20 +157,39 @@ func apiLogout(c *gin.Context) {
 
 func apiSearch(c *gin.Context) {
 	q := c.Query("q")
-	lang := c.DefaultQuery("lang", "en") // Default til engelsk hvis ikke specificeret
-
-	// Brug SearchPagesQuery fra queries.go
-	results, err := SearchPagesQuery(db, q, lang)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+	if q == "" {
+		// q er obligatorisk ifølge openAPI - derfor skal der bruges q i URL hvis man ønsker at finde noget.
+		c.JSON(422, gin.H{
+			"statusCode": 422,
+			"message":    "Query parameter 'q' is required",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"query":   q,
-		"count":   len(results),
-		"results": results,
+	lang := c.DefaultQuery("language", "en") // Default til engelsk
+
+	results, err := SearchPagesQuery(db, q, lang)
+	if err != nil {
+		// Hvis search fejler returnerer vi 422
+		c.JSON(422, gin.H{
+			"statusCode": 422,
+			"message":    "Search failed: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"data": results,
 	})
+}
+
+func apiSession(c *gin.Context) {
+	_, err := c.Cookie("user_id")
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"logged_in": false})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"logged_in": true})
 }
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
@@ -168,14 +204,23 @@ func serveLoginRegisterFiles(c *gin.Context, fp string) {
 }
 
 func serveLoginFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/login.html")
+	serveLoginRegisterFiles(c, "./public/login.html")
 }
 
 func serveRegisterFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/register.html")
+	serveLoginRegisterFiles(c, "./public/register.html")
 }
+
+func serverWeatherFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "./public/weather.html")
+}
+
+func serverAboutFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "./public/about.html")
+}
+
 func serveIndexFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/index.html")
+	serveLoginRegisterFiles(c, "./public/index.html")
 }
 
 // ==== Main entry ====
@@ -194,20 +239,19 @@ func main() {
 	{
 		api.POST("/login", apiLogin)
 		api.POST("/register", apiRegister)
-		api.GET("/logout", apiLogout)
 		api.POST("/logout", apiLogout)
 		api.GET("/search", apiSearch)
+		api.GET("/session", apiSession)
 	}
 
 	router.GET("/", serveIndexFile)
 	router.GET("/login", serveLoginFile)
 	router.GET("/register", serveRegisterFile)
+	router.GET("/weather", serverWeatherFile)
+	router.GET("/about", serverAboutFile)
 
-	// Maps /css, /js, /images to ./public/css, ./public/js, ./public/images
-	// So it can be used in HTML like <link href="/css/styles.css">
-	router.Static("/css", "../public/css")
-	router.Static("/js", "../public/js")
-	router.Static("/images", "../public/images") // or /img if you use that
+	// This makes everything in ./public available under /public
+	router.Static("/public", "./public")
 
 	if err := router.Run(PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
