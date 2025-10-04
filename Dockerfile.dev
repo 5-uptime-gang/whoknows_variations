@@ -1,0 +1,16 @@
+FROM golang:1.25
+
+WORKDIR /usr/src/app
+
+# Install Air for live reload
+RUN go install github.com/air-verse/air@latest
+
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy everything (including .air.toml)
+COPY . .
+
+# Default command
+CMD ["air", "-c", ".air.toml"]

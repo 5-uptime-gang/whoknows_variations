@@ -1,0 +1,17 @@
+services:
+  whoknows_variations_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: whoknows_variations_dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/usr/src/app         # hot reload
+      - go-mod-cache:/go/pkg   # module cache
+    environment:
+      - GIN_MODE=debug
+    restart: unless-stopped
+
+volumes:
+  go-mod-cache:
