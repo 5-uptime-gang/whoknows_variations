@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   whoknows_variations:
     image: whoknows_variations
