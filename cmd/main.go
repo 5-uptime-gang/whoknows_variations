@@ -143,31 +143,31 @@ func apiLogout(c *gin.Context) {
 }
 
 func apiSearch(c *gin.Context) {
-    q := c.Query("q")
-    if q == "" {
-        // q er obligatorisk ifølge openAPI - derfor skal der bruges q i URL hvis man ønsker at finde noget.
-        c.JSON(422, gin.H{
-            "statusCode": 422,
-            "message":    "Query parameter 'q' is required",
-        })
-        return
-    }
+	q := c.Query("q")
+	if q == "" {
+		// q er obligatorisk ifølge openAPI - derfor skal der bruges q i URL hvis man ønsker at finde noget.
+		c.JSON(422, gin.H{
+			"statusCode": 422,
+			"message":    "Query parameter 'q' is required",
+		})
+		return
+	}
 
-    lang := c.DefaultQuery("language", "en") // Default til engelsk
+	lang := c.DefaultQuery("language", "en") // Default til engelsk
 
-    results, err := SearchPagesQuery(db, q, lang)
-    if err != nil {
-        // Hvis search fejler returnerer vi 422
-        c.JSON(422, gin.H{
-            "statusCode": 422,
-            "message":    "Search failed: " + err.Error(),
-        })
-        return
-    }
+	results, err := SearchPagesQuery(db, q, lang)
+	if err != nil {
+		// Hvis search fejler returnerer vi 422
+		c.JSON(422, gin.H{
+			"statusCode": 422,
+			"message":    "Search failed: " + err.Error(),
+		})
+		return
+	}
 
-    c.JSON(200, gin.H{
-        "data": results,
-    })
+	c.JSON(200, gin.H{
+		"data": results,
+	})
 }
 
 func apiSession(c *gin.Context) {
@@ -178,7 +178,6 @@ func apiSession(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"logged_in": true})
 }
-
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
 	// Debug: confirm file exists and size
@@ -238,11 +237,8 @@ func main() {
 	router.GET("/weather", serverWeatherFile)
 	router.GET("/about", serverAboutFile)
 
-	// Serve static files from the "public" directory
-	fs := http.FileServer(http.Dir("public"))
-
-	// StripPrefix is optional: only needed if you mount it on a subpath
-	http.Handle("/", fs)
+	// This makes everything in ./public available under /public
+	router.Static("/public", "./public")
 
 	if err := router.Run(PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

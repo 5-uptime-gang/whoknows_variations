@@ -9,8 +9,6 @@ RUN go mod download
 COPY . .
 
 # build the main app from /cmd
-RUN go build -v -o /usr/local/bin/whoknows_variations ./cmd
+RUN go build -o /usr/local/bin/whoknows_variations ./cmd
 
 CMD ["whoknows_variations"]
-
-
