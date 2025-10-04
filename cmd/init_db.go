@@ -9,10 +9,7 @@ import (
 )
 
 func InitDB(db *sql.DB) error {
-	// Users: create + drop - dropper users og laver den efterfølgende
 	usersSchema := `
-	DROP TABLE IF EXISTS users;
-
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE,
@@ -20,7 +17,7 @@ func InitDB(db *sql.DB) error {
 		password TEXT NOT NULL
 	);
 
-	INSERT OR IGNORE INTO users (username, email, password) 
+	INSERT OR IGNORE INTO users (username, email, password)
 	VALUES ('admin', 'keamonk1@stud.kea.dk', '5f4dcc3b5aa765d61d8327deb882cf99');`
 
 	if _, err := db.Exec(usersSchema); err != nil {
@@ -59,7 +56,6 @@ func InitDB(db *sql.DB) error {
 			log.Printf("stmt.Close failed: %v", err)
 		}
 	}()
-
 
 	seedData := getPageSeedData()
 
@@ -105,4 +101,3 @@ func getPageSeedData() []Page {
 		{"AI og Maskinlæring", "https://da.wikipedia.org/wiki/Maskinl%C3%A6ring", "da", time.Time{}, "Maskinlæring er en gren af kunstig intelligens, hvor algoritmer trænes til at finde mønstre i data."},
 	}
 }
-

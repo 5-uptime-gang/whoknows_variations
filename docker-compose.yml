@@ -5,5 +5,8 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped # genstarter container automatisk ved crash
-
+    environment:
+      - GIN_MODE=release
+    volumes:
+      - ./data:/usr/src/app/data
     
