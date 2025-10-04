@@ -16,3 +16,12 @@ bin/
 # Logs / temp
 *.log
 tmp/
+
+
+Dockerfile*
+docker-compose*
+.air.toml
+
+.env
+
+docs/

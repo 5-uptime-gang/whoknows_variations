@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -27,17 +28,29 @@ type User struct {
 var db *sql.DB
 
 func init() {
-	var err error
-	db, err = sql.Open("sqlite", "whoknows.db")
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+	const dbPath = "/usr/src/app/data/whoknows.db"
+
+	// If the DB file doesn't exist, we'll need to initialize it
+	dbExists := true
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		dbExists = false
 	}
 
-	// Initialize database schema
-	if err := InitDB(db); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+	var err error
+	db, err = sql.Open("sqlite", dbPath)
+	if err != nil {
+		log.Fatalf("Failed to open database at %s: %v", dbPath, err)
 	}
-	log.Println("Database initialized successfully")
+
+	if !dbExists {
+		log.Println("Database not found — initializing schema and seed data...")
+		if err := InitDB(db); err != nil {
+			log.Fatalf("Failed to initialize database: %v", err)
+		}
+		log.Println("Database initialized successfully")
+	} else {
+		log.Println("Database already exists — skipping initialization")
+	}
 }
 
 // ==== API Endpoints ====
