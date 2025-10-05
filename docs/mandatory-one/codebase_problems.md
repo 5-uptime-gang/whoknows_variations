@@ -10,7 +10,7 @@
 - 
 
 ## Vigtige problemer
-- 
+- Change the footer, so it shows the current year dynamic
 
 ## Mindre problemer / kosmetiske 
 - mordernized styling
