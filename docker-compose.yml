@@ -8,5 +8,7 @@ services:
     environment:
       - GIN_MODE=release
     volumes:
-      - ./data:/usr/src/app/data
-    
+      - appdata:/usr/src/app/data
+
+volumes:
+  appdata:
