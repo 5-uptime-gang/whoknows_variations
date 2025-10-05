@@ -229,3 +229,6 @@ tmp/
 
 # Go workspace file
 go.work
+
+# SQLite database files
+*.db
