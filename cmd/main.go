@@ -37,12 +37,18 @@ type cacheEntry struct {
 	expires time.Time
 }
 
+type apiEnvelope struct {
+	Data any `json:"data"`
+}
+
 var (
+	cacheTimeToLiveMinutes = 15
+	cacheTTL               = time.Duration(cacheTimeToLiveMinutes) * time.Minute
+
 	wxCache = struct {
 		mu sync.RWMutex
 		m  map[string]cacheEntry
 	}{m: make(map[string]cacheEntry)}
-	cacheTTL = 15 * time.Minute
 )
 
 // ==== Users + Auth ====
@@ -186,17 +192,15 @@ func apiSearch(c *gin.Context) {
 }
 
 func apiWeather(c *gin.Context) {
-	lat := c.Query("lat")
-	lon := c.Query("lon")
-	if lat == "" || lon == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing lat/lon"})
-		return
-	}
-	days := c.DefaultQuery("days", "5")
-	units := c.DefaultQuery("units", "metric")
+	// ——— No query params: fixed defaults per team feedback ———
+	lat := "55.6761" // Copenhagen
+	lon := "12.5683"
+	days := "5"
+	units := "metric"
+
 	key := lat + "|" + lon + "|" + days + "|" + units
 
-	// 1) cache check
+	// 1) cache
 	wxCache.mu.RLock()
 	ce, ok := wxCache.m[key]
 	wxCache.mu.RUnlock()
@@ -206,10 +210,9 @@ func apiWeather(c *gin.Context) {
 		return
 	}
 
-	// 2) call Open-Meteo
+	// 2) upstream call
 	url := buildOpenMeteoURL(lat, lon, days, units)
 	req, _ := http.NewRequest("GET", url, nil)
-	// A polite UA (and useful if you later add MET Norway which requires it)
 	req.Header.Set("User-Agent", "who-knows-weather/1.0 (+contact: you@example.com)")
 
 	ctx, cancel := context.WithTimeout(c, 5*time.Second)
@@ -219,14 +222,9 @@ func apiWeather(c *gin.Context) {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
 		return
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Printf("error closing response body: %v", err)
-		}
-	}()
+	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
 
-	// 3) normalize provider JSON to our tiny shape
 	out, tz, err := normalizeOpenMeteo(raw)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "normalize failed"})
@@ -236,9 +234,10 @@ func apiWeather(c *gin.Context) {
 	out.Updated = time.Now().UTC().Format(time.RFC3339)
 	out.Timezone = tz
 
-	payload, _ := json.Marshal(out)
+	// Wrap as { "data": ... } to match spec
+	payload, _ := json.Marshal(apiEnvelope{Data: out})
 
-	// 4) cache + return
+	// 3) cache + return
 	wxCache.mu.Lock()
 	wxCache.m[key] = cacheEntry{payload: payload, expires: time.Now().Add(cacheTTL)}
 	wxCache.mu.Unlock()
