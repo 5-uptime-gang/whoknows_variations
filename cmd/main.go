@@ -13,7 +13,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
+
+
+  ginSwagger "github.com/swaggo/gin-swagger"
+  swaggerFiles "github.com/swaggo/files"
 )
+
+// @title WHOKNOWS_VARIATIONS - 5-uptime-gang - API
+// @version 1.0
+// @host 68.221.201.252:8080
+// @BasePath /api
 
 // ==== Users + Auth ====
 
@@ -55,6 +64,16 @@ func init() {
 
 // ==== API Endpoints ====
 
+// @Summary Login existing user
+// @Tags API
+// @Accept json
+// @Produce json
+// @Param username formData string true "username"
+// @Param password formData string true "password"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /login [post]
 func apiLogin(c *gin.Context) {
 	var creds struct {
 		Username string `json:"username" form:"username"`
@@ -87,6 +106,21 @@ func apiLogin(c *gin.Context) {
 	})
 }
 
+
+type RegisterRequest struct {
+    Username  string `json:"username" example:"testuser"`
+    Email     string `json:"email" example:"test@example.com"`
+    Password  string `json:"password" example:"supersecret"`
+    Password2 string `json:"password2" example:"supersecret"`
+}
+// @Summary Create new user
+// @Tags API
+// @Accept json
+// @Produce json
+// @Param user body RegisterRequest true "User"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Router /register [post]
 func apiRegister(c *gin.Context) {
 	var form struct {
 		Username  string `json:"username"`
@@ -145,6 +179,16 @@ func apiRegister(c *gin.Context) {
 	})
 }
 
+
+type SessionResponse struct {
+    LoggedIn bool `json:"logged_in" example:"true"`
+}
+
+// @Summary Logout the current user
+// @Tags API
+// @Produce json
+// @Success 200 {object} map[string]string "Logout confirmation"
+// @Router /logout [post]
 func apiLogout(c *gin.Context) {
 	// overwrite cookie with empty value and expired time
 	util.RemoveAuthCookie(c)
@@ -155,6 +199,15 @@ func apiLogout(c *gin.Context) {
 	})
 }
 
+
+// @Summary Search after pages
+// @Tags API
+// @Produce json
+// @Param q query string true "search word"
+// @Param language query string false "(default=en)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 422 {object} map[string]interface{}
+// @Router /search [get]
 func apiSearch(c *gin.Context) {
 	q := c.Query("q")
 	if q == "" {
@@ -183,6 +236,11 @@ func apiSearch(c *gin.Context) {
 	})
 }
 
+// @Summary checking the users session
+// @Tags API
+// @Produce json
+// @Success 200 {object} SessionResponse "Status for login"
+// @Router /session [get]
 func apiSession(c *gin.Context) {
 	_, err := c.Cookie("user_id")
 	if err != nil {
@@ -203,22 +261,47 @@ func serveLoginRegisterFiles(c *gin.Context, fp string) {
 	c.File(fp) // sets 200 + streams file if found
 }
 
+// @Summary getting login-page
+// @Tags Pages
+// @Produce html
+// @Success 200 "HTML page"
+// @Router /login [get]
 func serveLoginFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "./public/login.html")
 }
 
+// @Summary getting register-page
+// @Tags Pages
+// @Produce html
+// @Success 200 "HTML page"
+// @Router /register [get]
 func serveRegisterFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "./public/register.html")
 }
 
+// @Summary get weather-page
+// @Tags Pages
+// @Produce html
+// @Success 200 "HTML page"
+// @Router /weather [get]
 func serverWeatherFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "./public/weather.html")
 }
 
+// @Summary get about-page
+// @Tags Pages
+// @Produce html
+// @Success 200 "HTML page"
+// @Router /about [get]
 func serverAboutFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "./public/about.html")
 }
 
+// @Summary get index-page
+// @Tags Pages
+// @Produce html
+// @Success 200 "HTML page"
+// @Router / [get]
 func serveIndexFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "./public/index.html")
 }
@@ -249,6 +332,8 @@ func main() {
 	router.GET("/register", serveRegisterFile)
 	router.GET("/weather", serverWeatherFile)
 	router.GET("/about", serverAboutFile)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 
 	// This makes everything in ./public available under /public
 	router.Static("/public", "./public")
