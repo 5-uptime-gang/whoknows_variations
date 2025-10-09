@@ -1,0 +1,198 @@
+basePath: /api
+definitions:
+  main.RegisterRequest:
+    properties:
+      email:
+        example: test@example.com
+        type: string
+      password:
+        example: supersecret
+        type: string
+      password2:
+        example: supersecret
+        type: string
+      username:
+        example: testuser
+        type: string
+    type: object
+  main.SessionResponse:
+    properties:
+      logged_in:
+        example: true
+        type: boolean
+    type: object
+host: 68.221.201.252:8080
+info:
+  contact: {}
+  title: WHOKNOWS_VARIATIONS - 5-uptime-gang - API
+  version: "1.0"
+paths:
+  /:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+      summary: get index-page
+      tags:
+      - Pages
+  /about:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+      summary: get about-page
+      tags:
+      - Pages
+  /login:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+      summary: getting login-page
+      tags:
+      - Pages
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login existing user
+      tags:
+      - API
+  /logout:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout confirmation
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Logout the current user
+      tags:
+      - API
+  /register:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+      summary: getting register-page
+      tags:
+      - Pages
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/main.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create new user
+      tags:
+      - API
+  /search:
+    get:
+      parameters:
+      - description: search word
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: (default=en)
+        in: query
+        name: language
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search after pages
+      tags:
+      - API
+  /session:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status for login
+          schema:
+            $ref: '#/definitions/main.SessionResponse'
+      summary: checking the users session
+      tags:
+      - API
+  /weather:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+      summary: get weather-page
+      tags:
+      - Pages
+swagger: "2.0"
