@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+  title: DevOps_go_rewrite
+  version: 1.0.0
+  description: ''
+servers:
+  - url: 'http://68.221.201.252:8080'
+paths:
+  /api/login:
+    parameters: []
+    post:
+      summary: Post Login
+      tags: &ref_0 []
+      parameters: []
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+            example:
+              username: testuser
+              password: mySecret123
+  /api/register:
+    parameters: []
+    post:
+      summary: Post Register_Username_Email_Taken
+      tags: *ref_0
+      parameters: []
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                password2:
+                  type: string
+            example:
+              username: testuser
+              email: testuser@example.com
+              password: mySecret123
+              password2: mySecret123
+  /api/logout:
+    parameters: []
+    post:
+      summary: Post Logout
+      tags: *ref_0
+      parameters: []
+      responses: {}
+  /api/search:
+    parameters: []
+    get:
+      summary: Get Search
+      tags: *ref_0
+      parameters:
+        - name: q
+          in: query
+          required: false
+          example: '{{searchQuery}}'
+          schema:
+            type: string
+      responses: {}
+  /api/weather:
+    parameters: []
+    post:
+      summary: Get Weather
+      tags: *ref_0
+      parameters: []
+      responses: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+            example: {}
