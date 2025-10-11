@@ -1,54 +1,18 @@
 package main
 
 import (
-	"context"
+	"WHOKNOWS_VARIATIONS/util"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
-	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
-)
-
-// ==== Weather types + tiny cache ====
-type wxDaily struct {
-	Date string  `json:"date"`
-	TMin float64 `json:"tMin"`
-	TMax float64 `json:"tMax"`
-	Code int     `json:"code"`
-}
-type wxOut struct {
-	Source   string    `json:"source"`
-	Updated  string    `json:"updated"`
-	Timezone string    `json:"timezone"`
-	Days     []wxDaily `json:"daily"`
-}
-
-type cacheEntry struct {
-	payload []byte
-	expires time.Time
-}
-
-type apiEnvelope struct {
-	Data any `json:"data"`
-}
-
-var (
-	cacheTimeToLiveMinutes = 15
-	cacheTTL               = time.Duration(cacheTimeToLiveMinutes) * time.Minute
-
-	wxCache = struct {
-		mu sync.RWMutex
-		m  map[string]cacheEntry
-	}{m: make(map[string]cacheEntry)}
 )
 
 // ==== Users + Auth ====
@@ -64,17 +28,29 @@ type User struct {
 var db *sql.DB
 
 func init() {
-	var err error
-	db, err = sql.Open("sqlite", "whoknows.db")
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+	const dbPath = "/usr/src/app/data/whoknows.db"
+
+	// If the DB file doesn't exist, we'll need to initialize it
+	dbExists := true
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		dbExists = false
 	}
 
-	// Initialize database schema
-	if err := InitDB(db); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+	var err error
+	db, err = sql.Open("sqlite", dbPath)
+	if err != nil {
+		log.Fatalf("Failed to open database at %s: %v", dbPath, err)
 	}
-	log.Println("Database initialized successfully")
+
+	if !dbExists {
+		log.Println("Database not found — initializing schema and seed data...")
+		if err := InitDB(db); err != nil {
+			log.Fatalf("Failed to initialize database: %v", err)
+		}
+		log.Println("Database initialized successfully")
+	} else {
+		log.Println("Database already exists — skipping initialization")
+	}
 }
 
 // ==== API Endpoints ====
@@ -100,6 +76,8 @@ func apiLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
 		return
 	}
+
+	util.SetAuthCookie(c, id)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "login successful",
@@ -159,6 +137,8 @@ func apiRegister(c *gin.Context) {
 		return
 	}
 
+	util.SetAuthCookie(c, int(userID))
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "user registered successfully",
 		"user_id": userID,
@@ -166,7 +146,9 @@ func apiRegister(c *gin.Context) {
 }
 
 func apiLogout(c *gin.Context) {
-	// ingen logik/tilstand — bare et simpelt svar
+	// overwrite cookie with empty value and expired time
+	util.RemoveAuthCookie(c)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged out",
 		"status":  "ok",
@@ -175,113 +157,39 @@ func apiLogout(c *gin.Context) {
 
 func apiSearch(c *gin.Context) {
 	q := c.Query("q")
-	lang := c.DefaultQuery("lang", "en") // Default til engelsk hvis ikke specificeret
-
-	// Brug SearchPagesQuery fra queries.go
-	results, err := SearchPagesQuery(db, q, lang)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "search failed"})
+	if q == "" {
+		// q er obligatorisk ifølge openAPI - derfor skal der bruges q i URL hvis man ønsker at finde noget.
+		c.JSON(422, gin.H{
+			"statusCode": 422,
+			"message":    "Query parameter 'q' is required",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"query":   q,
-		"count":   len(results),
-		"results": results,
+	lang := c.DefaultQuery("language", "en") // Default til engelsk
+
+	results, err := SearchPagesQuery(db, q, lang)
+	if err != nil {
+		// Hvis search fejler returnerer vi 422
+		c.JSON(422, gin.H{
+			"statusCode": 422,
+			"message":    "Search failed: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"data": results,
 	})
 }
 
-func apiWeather(c *gin.Context) {
-	// ——— No query params: fixed defaults per team feedback ———
-	lat := "55.6761" // Copenhagen
-	lon := "12.5683"
-	days := "5"
-	units := "metric"
-
-	key := lat + "|" + lon + "|" + days + "|" + units
-
-	// 1) cache
-	wxCache.mu.RLock()
-	ce, ok := wxCache.m[key]
-	wxCache.mu.RUnlock()
-	if ok && time.Now().Before(ce.expires) {
-		c.Header("X-Cache", "HIT")
-		c.Data(http.StatusOK, "application/json", ce.payload)
-		return
-	}
-
-	// 2) upstream call
-	url := buildOpenMeteoURL(lat, lon, days, units)
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("User-Agent", "who-knows-weather/1.0 (+contact: you@example.com)")
-
-	ctx, cancel := context.WithTimeout(c, 5*time.Second)
-	defer cancel()
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-	if err != nil || resp.StatusCode >= 500 {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
-		return
-	}
-	defer resp.Body.Close()
-	raw, _ := io.ReadAll(resp.Body)
-
-	out, tz, err := normalizeOpenMeteo(raw)
+func apiSession(c *gin.Context) {
+	_, err := c.Cookie("user_id")
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "normalize failed"})
+		c.JSON(http.StatusOK, gin.H{"logged_in": false})
 		return
 	}
-	out.Source = "open-meteo"
-	out.Updated = time.Now().UTC().Format(time.RFC3339)
-	out.Timezone = tz
-
-	// Wrap as { "data": ... } to match spec
-	payload, _ := json.Marshal(apiEnvelope{Data: out})
-
-	// 3) cache + return
-	wxCache.mu.Lock()
-	wxCache.m[key] = cacheEntry{payload: payload, expires: time.Now().Add(cacheTTL)}
-	wxCache.mu.Unlock()
-
-	c.Header("X-Cache", "MISS")
-	c.Data(http.StatusOK, "application/json", payload)
-}
-
-func buildOpenMeteoURL(lat, lon, days, units string) string {
-	tempUnit := "celsius"
-	if units == "imperial" {
-		tempUnit = "fahrenheit"
-	}
-	// daily fields: weather code + min/max temps; timezone auto
-	return fmt.Sprintf(
-		"https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&timezone=auto&daily=weathercode,temperature_2m_max,temperature_2m_min&forecast_days=%s&temperature_unit=%s",
-		lat, lon, days, tempUnit)
-}
-
-type omResp struct {
-	Daily struct {
-		Time        []string  `json:"time"`
-		WeatherCode []int     `json:"weathercode"`
-		TempMax     []float64 `json:"temperature_2m_max"`
-		TempMin     []float64 `json:"temperature_2m_min"`
-	} `json:"daily"`
-	Timezone string `json:"timezone"`
-}
-
-func normalizeOpenMeteo(raw []byte) (wxOut, string, error) {
-	var r omResp
-	if err := json.Unmarshal(raw, &r); err != nil {
-		return wxOut{}, "", err
-	}
-	out := wxOut{}
-	for i := range r.Daily.Time {
-		out.Days = append(out.Days, wxDaily{
-			Date: r.Daily.Time[i],
-			TMin: r.Daily.TempMin[i],
-			TMax: r.Daily.TempMax[i],
-			Code: r.Daily.WeatherCode[i],
-		})
-	}
-	return out, r.Timezone, nil
+	c.JSON(http.StatusOK, gin.H{"logged_in": true})
 }
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
@@ -296,14 +204,23 @@ func serveLoginRegisterFiles(c *gin.Context, fp string) {
 }
 
 func serveLoginFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/login.html")
+	serveLoginRegisterFiles(c, "./public/login.html")
 }
 
 func serveRegisterFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/register.html")
+	serveLoginRegisterFiles(c, "./public/register.html")
 }
+
+func serverWeatherFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "./public/weather.html")
+}
+
+func serverAboutFile(c *gin.Context) {
+	serveLoginRegisterFiles(c, "./public/about.html")
+}
+
 func serveIndexFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "../public/index.html")
+	serveLoginRegisterFiles(c, "./public/index.html")
 }
 
 // ==== Main entry ====
@@ -322,21 +239,19 @@ func main() {
 	{
 		api.POST("/login", apiLogin)
 		api.POST("/register", apiRegister)
-		api.GET("/logout", apiLogout)
 		api.POST("/logout", apiLogout)
 		api.GET("/search", apiSearch)
-		api.GET("/weather", apiWeather)
+		api.GET("/session", apiSession)
 	}
 
 	router.GET("/", serveIndexFile)
 	router.GET("/login", serveLoginFile)
 	router.GET("/register", serveRegisterFile)
+	router.GET("/weather", serverWeatherFile)
+	router.GET("/about", serverAboutFile)
 
-	// Maps /css, /js, /images to ./public/css, ./public/js, ./public/images
-	// So it can be used in HTML like <link href="/css/styles.css">
-	router.Static("/css", "../public/css")
-	router.Static("/js", "../public/js")
-	router.Static("/images", "../public/images") // or /img if you use that
+	// This makes everything in ./public available under /public
+	router.Static("/public", "./public")
 
 	if err := router.Run(PORT); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

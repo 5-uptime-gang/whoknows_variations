@@ -223,9 +223,12 @@ __marimo__/
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# Development only
 .air.toml
+tmp/
 
 # Go workspace file
 go.work
+
+# SQLite database files
+*.db

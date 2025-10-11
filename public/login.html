@@ -3,13 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./css/styles.css" />
-    <link rel="stylesheet" href="./css/register-and-login.css" />
+    <link rel="icon" href="/public/images/favicon.png">
+    <link rel="stylesheet" href="/public/css/styles.css" />
+    <link rel="stylesheet" href="/public/css/register-and-login.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"
       rel="stylesheet"
     />
-    <title>¿Who Knows?</title>
+    <title>Login - ¿Who Knows?</title>
   </head>
 
   <body>
@@ -17,8 +18,10 @@
       <nav>
         <h3><a id="nav-logo" href="/">¿Who Knows?</a></h3>
         <div class="navigation-links">
-          <a id="nav-login" href="/register">Register</a>
-          <a id="nav-register" href="/login">Log in</a>
+          <a id="nav-weather" href="/weather">Weather</a>
+          <a id="nav-logout" href="/api/logout">Log out</a>
+          <a id="nav-register" href="/register">Register</a>
+          <a id="nav-login" href="/login">Log in</a>
         </div>
       </nav>
     </div>
@@ -44,7 +47,7 @@
       </label>
 
       <p id="errorMessage" style="color: red; display: none"></p>
-      <button type="submit">Register</button>
+      <button type="submit">Login</button>
     </form>
 
     <footer class="footer">
@@ -52,46 +55,6 @@
       <a href="/about">about</a>
     </footer>
   </body>
-  <script src="js/index.js"></script>
-  <script>
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const formData = new FormData(form);
-      const errorMessage = document.getElementById("errorMessage");
-
-      let responseStatus; // Gem response status her
-
-      fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.get("username"),
-          password: formData.get("password"),
-        }),
-      })
-        .then((response) => {
-          responseStatus = response.ok; // Gem response.ok
-          return response.json();
-        })
-        .then((data) => {
-          if (responseStatus) {
-            // Brug den gemte status
-            // Login successful
-            window.location.href = "/";
-          } else {
-            // Show error message
-            errorMessage.textContent = data.error || "Login failed";
-            errorMessage.style.display = "block";
-          }
-        })
-        .catch((error) => {
-          errorMessage.textContent = "Error connecting to server";
-          errorMessage.style.display = "block";
-          console.error("Error:", error);
-        });
-    });
-  </script>
+  <script src="/public/js/navbar.js"></script>
+  <script src="/public/js/login.js"></script>
 </html>
