@@ -2,13 +2,18 @@ package main
 
 import (
 	"WHOKNOWS_VARIATIONS/util"
+	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -23,6 +28,36 @@ type User struct {
 	Email    string `json:"email"`
 	Password string `json:"-"` // "-" skjuler password i JSON output
 }
+
+// --- Weather types + tiny cache ---
+type wxDay struct {
+	Date string  `json:"date"`
+	TMin float64 `json:"tMin"`
+	TMax float64 `json:"tMax"`
+	Code int     `json:"code"`
+}
+type wxOut struct {
+	Source   string  `json:"source"`
+	Updated  string  `json:"updated"`
+	Timezone string  `json:"timezone"`
+	Days     []wxDay `json:"daily"`
+}
+type apiEnvelope struct {
+	Data any `json:"data"`
+}
+type cacheEntry struct {
+	payload []byte
+	expires time.Time
+}
+
+var (
+	cacheTimeToLiveMinutes = 15
+	cacheTTL               = time.Duration(cacheTimeToLiveMinutes) * time.Minute
+	wxCache                = struct {
+		mu sync.RWMutex
+		m  map[string]cacheEntry
+	}{m: make(map[string]cacheEntry)}
+)
 
 // ==== Database initializer ====
 var db *sql.DB
@@ -54,6 +89,125 @@ func init() {
 }
 
 // ==== API Endpoints ====
+
+func apiWeather(c *gin.Context) {
+	lat, lon := "55.6761", "12.5683" // Copenhagen
+	days, units := "5", "metric"
+	key := lat + "|" + lon + "|" + days + "|" + units
+
+	// 1) cache
+	wxCache.mu.RLock()
+	ce, ok := wxCache.m[key]
+	wxCache.mu.RUnlock()
+	if ok && time.Now().Before(ce.expires) {
+		c.Header("X-Cache", "HIT")
+		c.Data(http.StatusOK, "application/json", ce.payload)
+		return
+	}
+
+	// 2) upstream call
+	url := buildOpenMeteoURL(lat, lon, days, units)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "request build failed"})
+		return
+	}
+	req.Header.Set("User-Agent", "who-knows-weather/1.0 (+contact: example@example.com)")
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
+		return
+	}
+	// make errcheck happy + do the right thing
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("resp body close error: %v", cerr)
+		}
+	}()
+
+	if resp.StatusCode >= 500 {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
+		return
+	}
+	if resp.StatusCode >= 400 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request to upstream"})
+		return
+	}
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "read upstream failed"})
+		return
+	}
+
+	// 3) normalize provider JSON to our stable shape
+	out, tz, err := normalizeOpenMeteo(raw)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "normalize failed"})
+		return
+	}
+	out.Source = "open-meteo"
+	out.Updated = time.Now().UTC().Format(time.RFC3339)
+	out.Timezone = tz
+
+	// 4) wrap as { "data": ... } to match your spec
+	payload, err := json.Marshal(apiEnvelope{Data: out})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "marshal failed"})
+		return
+	}
+
+	// 5) save to cache + return
+	wxCache.mu.Lock()
+	wxCache.m[key] = cacheEntry{payload: payload, expires: time.Now().Add(cacheTTL)}
+	wxCache.mu.Unlock()
+
+	c.Header("X-Cache", "MISS")
+	c.Data(http.StatusOK, "application/json", payload)
+}
+
+func buildOpenMeteoURL(lat, lon, days, units string) string {
+	tempUnit := "celsius"
+	if units == "imperial" {
+		tempUnit = "fahrenheit"
+	}
+	return "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
+		"&longitude=" + lon +
+		"&timezone=auto&daily=weathercode,temperature_2m_max,temperature_2m_min" +
+		"&forecast_days=" + days +
+		"&temperature_unit=" + tempUnit
+}
+
+type omResp struct {
+	Daily struct {
+		Time        []string  `json:"time"`
+		WeatherCode []int     `json:"weathercode"`
+		TempMax     []float64 `json:"temperature_2m_max"`
+		TempMin     []float64 `json:"temperature_2m_min"`
+	} `json:"daily"`
+	Timezone string `json:"timezone"`
+}
+
+func normalizeOpenMeteo(raw []byte) (wxOut, string, error) {
+	var r omResp
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return wxOut{}, "", err
+	}
+	o := wxOut{}
+	for i := range r.Daily.Time {
+		o.Days = append(o.Days, wxDay{
+			Date: r.Daily.Time[i],
+			TMin: r.Daily.TempMin[i],
+			TMax: r.Daily.TempMax[i],
+			Code: r.Daily.WeatherCode[i],
+		})
+	}
+	return o, r.Timezone, nil
+}
 
 func apiLogin(c *gin.Context) {
 	var creds struct {
@@ -242,6 +396,7 @@ func main() {
 		api.POST("/logout", apiLogout)
 		api.GET("/search", apiSearch)
 		api.GET("/session", apiSession)
+		api.GET("/weather", apiWeather)
 	}
 
 	router.GET("/", serveIndexFile)
