@@ -91,7 +91,6 @@ func init() {
 // ==== API Endpoints ====
 
 func apiWeather(c *gin.Context) {
-	// No query params per spec; fixed DK defaults
 	lat, lon := "55.6761", "12.5683" // Copenhagen
 	days, units := "5", "metric"
 	key := lat + "|" + lon + "|" + days + "|" + units
@@ -108,18 +107,42 @@ func apiWeather(c *gin.Context) {
 
 	// 2) upstream call
 	url := buildOpenMeteoURL(lat, lon, days, units)
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "request build failed"})
+		return
+	}
 	req.Header.Set("User-Agent", "who-knows-weather/1.0 (+contact: example@example.com)")
 
-	ctx, cancel := context.WithTimeout(c, 5*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
+
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-	if err != nil || resp.StatusCode >= 500 {
+	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
 		return
 	}
-	defer resp.Body.Close()
-	raw, _ := io.ReadAll(resp.Body)
+	// make errcheck happy + do the right thing
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("resp body close error: %v", cerr)
+		}
+	}()
+
+	if resp.StatusCode >= 500 {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
+		return
+	}
+	if resp.StatusCode >= 400 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request to upstream"})
+		return
+	}
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "read upstream failed"})
+		return
+	}
 
 	// 3) normalize provider JSON to our stable shape
 	out, tz, err := normalizeOpenMeteo(raw)
@@ -132,7 +155,11 @@ func apiWeather(c *gin.Context) {
 	out.Timezone = tz
 
 	// 4) wrap as { "data": ... } to match your spec
-	payload, _ := json.Marshal(apiEnvelope{Data: out})
+	payload, err := json.Marshal(apiEnvelope{Data: out})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "marshal failed"})
+		return
+	}
 
 	// 5) save to cache + return
 	wxCache.mu.Lock()
