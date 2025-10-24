@@ -3,11 +3,11 @@ async function loadWeather() {
   try {
     const res = await fetch("/api/weather");
     if (!res.ok) throw new Error("Failed to fetch weather");
-    const data = await res.json();
+    const result = await res.json();
 
     container.innerHTML = "";
 
-    data.days.forEach((day) => {
+    result.data.daily.forEach((day) => {
       const div = document.createElement("div");
       div.className = "weather-day";
 
@@ -17,7 +17,7 @@ async function loadWeather() {
 
       const tempSpan = document.createElement("span");
       tempSpan.className = "temps";
-      tempSpan.textContent = `🌡 ${day.tmin}°C – ${day.tmax}°C`;
+      tempSpan.textContent = `🌡 ${day.tMin}°C – ${day.tMax}°C`;
 
       const codeSpan = document.createElement("span");
       codeSpan.className = "code";
@@ -32,9 +32,9 @@ async function loadWeather() {
 
     const footer = document.createElement("div");
     footer.className = "forecast-footer";
-    footer.textContent = `Source: ${data.source} • Updated: ${new Date(
-      data.updated
-    ).toLocaleString()} (${data.timezone})`;
+    footer.textContent = `Source: ${result.data.source} • Updated: ${new Date(
+      result.data.updated
+    ).toLocaleString()} (${result.data.timezone})`;
     container.appendChild(footer);
   } catch (err) {
     container.textContent = `Error loading weather data: ${err.message}`;
