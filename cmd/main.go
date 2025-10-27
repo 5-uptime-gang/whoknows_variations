@@ -393,7 +393,7 @@ func main() {
 	{
 		api.POST("/login", apiLogin)
 		api.POST("/register", apiRegister)
-		api.POST("/logout", apiLogout)
+		api.GET("/logout", apiLogout)
 		api.GET("/search", apiSearch)
 		api.GET("/session", apiSession)
 		api.GET("/weather", apiWeather)
