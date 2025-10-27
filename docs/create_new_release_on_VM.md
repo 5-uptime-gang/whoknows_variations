@@ -1,3 +1,4 @@
+# OBS: Outdated
 # 1. Create a new folder with a timestamp
 STAMP=$(date +%F_%H-%M-%S)
 RDIR="/srv/adminuser/releases/$STAMP"
