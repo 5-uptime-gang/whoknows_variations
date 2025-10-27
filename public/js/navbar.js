@@ -19,7 +19,7 @@ async function checkSession() {
   // logout button click
   document.getElementById("nav-logout").addEventListener("click", async (e) => {
     e.preventDefault();
-    await fetch("/api/logout", { method: "POST", credentials: "include" });
+    await fetch("/api/logout", { method: "GET", credentials: "include" });
     location.reload();
   });
 }
