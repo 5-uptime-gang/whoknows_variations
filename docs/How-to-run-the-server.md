@@ -79,7 +79,7 @@ docker compose up -d --build
 **What happens:**
 - Builds the application using the `Dockerfile`.
 - Runs it as a lightweight container (`whoknows_variations`).
-- Mounts a persistent database volume (`./data` → `/usr/src/app/data`).
+- Mounts a persistent database volume (`appdata` → `/usr/src/app/data`).
 
 Access the app at:  
 [http://localhost:8080](http://localhost:8080)
