@@ -12,19 +12,12 @@ RUN go mod download
 # Copy all source
 COPY . .
 
-# Create non-root user and writable dirs
-RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup \
-    && mkdir -p /usr/src/app/data /usr/src/app/.cache \
-    && chown -R appuser:appgroup /usr/src/app
-
 # Let Docker handle these folders as volumes
 VOLUME ["/usr/src/app/data", "/usr/src/app/.cache"]
 
 # Go cache paths
 ENV GOCACHE=/usr/src/app/.cache \
     GOMODCACHE=/go/pkg/mod
-
-USER appuser
 
 EXPOSE 8080
 CMD ["air", "-c", ".air.toml"]
