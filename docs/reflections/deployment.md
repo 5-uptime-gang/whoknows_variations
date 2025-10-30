@@ -1,3 +1,9 @@
+## 27-10-2025 Redeployment & Thoughts
+
+- Under redeployment crashede serveren igen pga. manglende RAM. En restart på serveren fixede det, men det kan være vi skal kigge nærmere ind i det næste gang der deployes. Det kan skabe problemer i forhold til automatisk deployment hvis den crasher ved build.
+
+- Nogle tanker i forhold til vores branching stategi så tænker vi at det måske alligevel kan være nice med clean branches. Det giver bedre overblik over hvilke branches er aktive og relevante.
+
 ## 05-10-2025 deployment
 
 - Vi valgte at deploye søndag aften kl. 20:00. Det var en fejl — for når man er træt og egentlig bare vil i seng, ender man med en masse fejl, som man først har energi og overskud til at rette næste dag.
