@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -214,23 +213,29 @@ func apiLogin(c *gin.Context) {
 		Username string `json:"username" form:"username"`
 		Password string `json:"password" form:"password"`
 	}
+
 	if err := c.ShouldBind(&creds); err != nil {
+		log.Printf("[LOGIN] Failed to bind creds: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
-	// Brug GetUserByUsernameQuery fra queries.go
+	log.Printf("[LOGIN] Attempt for user=%s", creds.Username)
+
 	id, username, email, hashedPassword, err := GetUserByUsernameQuery(db, creds.Username)
 	if err != nil {
+		log.Printf("[LOGIN] Invalid username: %s (err=%v)", creds.Username, err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(creds.Password)); err != nil {
+		log.Printf("[LOGIN] Wrong password for user=%s", creds.Username)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
 		return
 	}
 
+	log.Printf("[LOGIN] SUCCESS: user=%s id=%d", creds.Username, id)
 	util.SetAuthCookie(c, id)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -250,48 +255,52 @@ func apiRegister(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&form); err != nil {
+		log.Printf("[REGISTER] Invalid request body: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
+	log.Printf("[REGISTER] Attempt: username=%q email=%q", form.Username, form.Email)
+
 	// Validation
 	if form.Username == "" {
+		log.Printf("[REGISTER] Missing username")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a username"})
 		return
 	}
-	if form.Email == "" || !regexp.MustCompile(`.+@.+\..+`).MatchString(form.Email) {
+	if form.Email == "" || !regexp.MustCompile(`.+@.+\\..+`).MatchString(form.Email) {
+		log.Printf("[REGISTER] Invalid email: %q", form.Email)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a valid email address"})
 		return
 	}
 	if form.Password == "" {
+		log.Printf("[REGISTER] Missing password for username=%q", form.Username)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a password"})
 		return
 	}
 	if form.Password != form.Password2 {
+		log.Printf("[REGISTER] Password mismatch for username=%q", form.Username)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "the two passwords do not match"})
 		return
 	}
 
-	fmt.Println("username: ", form.Username)
-	fmt.Println("Email:", form.Email)
-	fmt.Println("password1: ", form.Password)
-	fmt.Println("password2: ", form.Password2)
-
 	// Hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Printf("[REGISTER] Password hashing failed for %q: %v", form.Username, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
 		return
 	}
 
-	// Brug InsertUserQuery fra queries.go
 	userID, err := InsertUserQuery(db, form.Username, form.Email, string(hash))
 	if err != nil {
+		log.Printf("[REGISTER] DB insert failed for %q: %v", form.Username, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "username or email already taken"})
 		return
 	}
 
 	util.SetAuthCookie(c, int(userID))
+	log.Printf("[REGISTER] SUCCESS: userID=%d username=%q email=%q", userID, form.Username, form.Email)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "user registered successfully",
@@ -299,9 +308,13 @@ func apiRegister(c *gin.Context) {
 	})
 }
 
+
 func apiLogout(c *gin.Context) {
 	// overwrite cookie with empty value and expired time
 	util.RemoveAuthCookie(c)
+
+	userIP := c.ClientIP()
+	log.Printf("[LOGOUT] Logout request from IP=%s", userIP)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged out",
@@ -309,10 +322,11 @@ func apiLogout(c *gin.Context) {
 	})
 }
 
+
 func apiSearch(c *gin.Context) {
 	q := c.Query("q")
 	if q == "" {
-		// q er obligatorisk ifølge openAPI - derfor skal der bruges q i URL hvis man ønsker at finde noget.
+		log.Printf("[SEARCH] Missing query parameter 'q'")
 		c.JSON(422, gin.H{
 			"statusCode": 422,
 			"message":    "Query parameter 'q' is required",
@@ -320,11 +334,12 @@ func apiSearch(c *gin.Context) {
 		return
 	}
 
-	lang := c.DefaultQuery("language", "en") // Default til engelsk
+	lang := c.DefaultQuery("language", "en")
+	log.Printf("[SEARCH] Query started: q=%q lang=%q", q, lang)
 
 	results, err := SearchPagesQuery(db, q, lang)
 	if err != nil {
-		// Hvis search fejler returnerer vi 422
+		log.Printf("[SEARCH] Failed: q=%q err=%v", q, err)
 		c.JSON(422, gin.H{
 			"statusCode": 422,
 			"message":    "Search failed: " + err.Error(),
@@ -332,19 +347,25 @@ func apiSearch(c *gin.Context) {
 		return
 	}
 
+	log.Printf("[SEARCH] Completed: q=%q results=%d", q, len(results))
 	c.JSON(200, gin.H{
 		"data": results,
 	})
 }
 
+
 func apiSession(c *gin.Context) {
 	_, err := c.Cookie("user_id")
 	if err != nil {
+		log.Printf("[SESSION] No session cookie found from IP=%s", c.ClientIP())
 		c.JSON(http.StatusOK, gin.H{"logged_in": false})
 		return
 	}
+
+	log.Printf("[SESSION] Valid session detected from IP=%s", c.ClientIP())
 	c.JSON(http.StatusOK, gin.H{"logged_in": true})
 }
+
 
 func serveLoginRegisterFiles(c *gin.Context, fp string) {
 	// Debug: confirm file exists and size
@@ -377,6 +398,23 @@ func serveIndexFile(c *gin.Context) {
 	serveLoginRegisterFiles(c, "./public/index.html")
 }
 
+func loggingMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		method := c.Request.Method
+		path := c.Request.URL.Path
+		clientIP := c.ClientIP()
+
+		log.Printf("[REQ] %s %s from %s", method, path, clientIP)
+
+		c.Next() // process the request
+
+		status := c.Writer.Status()
+		duration := time.Since(start)
+		log.Printf("[RESP] %s %s -> %d (%v)", method, path, status, duration)
+	}
+}
+
 // ==== Main entry ====
 
 func main() {
@@ -385,7 +423,18 @@ func main() {
 			log.Printf("Error closing DB: %v", err)
 		}
 	}()
-	router := gin.Default()
+
+	logPath := "/usr/src/app/data/server.log"
+	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+    	log.Fatalf("Failed to open log file: %v", err)
+	}
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	router := gin.New()
+    router.Use(gin.Recovery(), loggingMiddleware())
 
 	const PORT = ":8080"
 
