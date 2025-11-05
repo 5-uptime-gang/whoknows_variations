@@ -268,7 +268,7 @@ func apiRegister(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a username"})
 		return
 	}
-	if form.Email == "" || !regexp.MustCompile(`.+@.+\\..+`).MatchString(form.Email) {
+	if form.Email == "" || !regexp.MustCompile(`.+@.+\..+`).MatchString(form.Email) {
 		log.Printf("[REGISTER] Invalid email: %q", form.Email)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a valid email address"})
 		return
