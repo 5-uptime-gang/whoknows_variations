@@ -73,7 +73,7 @@ This setup builds a minimal, non-root production image and runs it persistently.
 ### 1. Build and run the container
 From the project root:
 ```bash
-docker compose up -d --build
+sudo docker-compose up -d --build
 ```
 
 **What happens:**
@@ -86,13 +86,13 @@ Access the app at:
 
 ### 2. View logs
 ```bash
-docker compose logs -f
+docker-compose logs -f
 ```
 
 ### 3. Stop or restart
 ```bash
-docker compose down        # stop the container
-docker compose restart     # restart quickly
+sudo docker-compose down        # stop the container
+sudo docker-compose restart     # restart quickly
 ```
 
 ---
@@ -108,7 +108,7 @@ docker compose -f docker-compose.dev.yml down -v
 
 **Production:**
 ```bash
-docker compose down -v
+sudo docker-compose down -v
 ```
 
 ---
@@ -118,7 +118,7 @@ docker compose down -v
 | Environment   | Command                                           | Description                              |
 |----------------|---------------------------------------------------|------------------------------------------|
 | Development    | `docker compose -f docker-compose.dev.yml up --build` | Hot reload with persistent volumes       |
-| Production     | `docker compose up -d --build`                   | Optimized static build, persistent DB    |
+| Production     | `sudo docker-compose up -d --build`                   | Optimized static build, persistent DB    |
 | Stop dev       | `docker compose -f docker-compose.dev.yml down`  | Stops container, keeps DB                |
 | Reset dev      | `docker compose -f docker-compose.dev.yml down -v` | Stops and deletes DB volume              |
 
