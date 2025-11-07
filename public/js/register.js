@@ -21,11 +21,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }),
     })
       .then((response) => {
-        if (response.status === 201) {
+        if (response.status === 200) {
           return response.json();
         } else {
           return response.json().then((data) => {
-            throw new Error(data.error || "Registration failed");
+            throw new Error(data.detail[0].msg || "Registration failed");
           });
         }
       })

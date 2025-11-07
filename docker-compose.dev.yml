@@ -31,6 +31,12 @@ services:
       - appnet
     restart: unless-stopped
 
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: go test -v ./...
+    
 volumes:
   go-mod-cache:
   dev-data:

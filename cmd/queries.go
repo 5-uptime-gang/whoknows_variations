@@ -16,8 +16,20 @@ type Page struct {
 	Content     string    `json:"content"`
 }
 
-func InsertUserQuery(db *sql.DB, username string, email string, password string) (int64, error) {
-	query := "INSERT INTO users (username, email, password) values (?, ?, ?)"
+// ---- Function variables (can be replaced in tests) ----
+
+var (
+	InsertUserQuery        func(db *sql.DB, username, email, password string) (int64, error)
+	GetUserIDQuery         func(db *sql.DB, username string) (int, error)
+	GetUserByIDQuery       func(db *sql.DB, userID string) (int, string, string, string, error)
+	GetUserByUsernameQuery func(db *sql.DB, username string) (int, string, string, string, error)
+	SearchPagesQuery       func(db *sql.DB, searchTerm, language string) ([]Page, error)
+)
+
+// ---- Real implementations ----
+
+func realInsertUserQuery(db *sql.DB, username, email, password string) (int64, error) {
+	query := "INSERT INTO users (username, email, password) VALUES (?, ?, ?)"
 	res, err := db.Exec(query, username, email, password)
 	if err != nil {
 		return 0, err
@@ -25,7 +37,7 @@ func InsertUserQuery(db *sql.DB, username string, email string, password string)
 	return res.LastInsertId()
 }
 
-func GetUserIDQuery(db *sql.DB, username string) (int, error) {
+func realGetUserIDQuery(db *sql.DB, username string) (int, error) {
 	query := "SELECT id FROM users WHERE username = ?"
 	var id int
 	err := db.QueryRow(query, username).Scan(&id)
@@ -35,7 +47,7 @@ func GetUserIDQuery(db *sql.DB, username string) (int, error) {
 	return id, nil
 }
 
-func GetUserByIDQuery(db *sql.DB, userID string) (int, string, string, string, error) {
+func realGetUserByIDQuery(db *sql.DB, userID string) (int, string, string, string, error) {
 	query := "SELECT * FROM users WHERE id = ?"
 	row := db.QueryRow(query, userID)
 	var id int
@@ -47,7 +59,7 @@ func GetUserByIDQuery(db *sql.DB, userID string) (int, string, string, string, e
 	return id, username, email, password, nil
 }
 
-func GetUserByUsernameQuery(db *sql.DB, username string) (int, string, string, string, error) {
+func realGetUserByUsernameQuery(db *sql.DB, username string) (int, string, string, string, error) {
 	query := "SELECT * FROM users WHERE username = ?"
 	row := db.QueryRow(query, username)
 	var id int
@@ -59,7 +71,7 @@ func GetUserByUsernameQuery(db *sql.DB, username string) (int, string, string, s
 	return id, dbUsername, email, password, nil
 }
 
-func SearchPagesQuery(db *sql.DB, searchTerm string, language string) ([]Page, error) {
+func realSearchPagesQuery(db *sql.DB, searchTerm, language string) ([]Page, error) {
 	query := "SELECT title, url, language, last_updated, content FROM pages WHERE language = ?"
 	args := []interface{}{language}
 
@@ -81,8 +93,7 @@ func SearchPagesQuery(db *sql.DB, searchTerm string, language string) ([]Page, e
 	var pages []Page
 	for rows.Next() {
 		var page Page
-		err := rows.Scan(&page.Title, &page.URL, &page.Language, &page.LastUpdated, &page.Content)
-		if err != nil {
+		if err := rows.Scan(&page.Title, &page.URL, &page.Language, &page.LastUpdated, &page.Content); err != nil {
 			log.Printf("SearchPagesQuery row scan error: %v", err)
 			continue
 		}
@@ -92,4 +103,14 @@ func SearchPagesQuery(db *sql.DB, searchTerm string, language string) ([]Page, e
 		return nil, err
 	}
 	return pages, nil
+}
+
+// ---- Assign real implementations ----
+
+func init() {
+	InsertUserQuery = realInsertUserQuery
+	GetUserIDQuery = realGetUserIDQuery
+	GetUserByIDQuery = realGetUserByIDQuery
+	GetUserByUsernameQuery = realGetUserByUsernameQuery
+	SearchPagesQuery = realSearchPagesQuery
 }
