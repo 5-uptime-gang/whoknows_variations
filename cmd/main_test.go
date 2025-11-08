@@ -151,22 +151,40 @@ func TestLoginWrongPassword(t *testing.T) {
 	assert.Equal(t, "password", resp.Detail[0].Loc[0])
 }
 
-func TestLoginSuccess(t *testing.T) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("testpassword"), bcrypt.DefaultCost) //NOSONAR
-	mockGetUserByUsernameQuery = func(_ *sql.DB, u string) (int, string, string, string, error) {
-		return 1, "u", "e", string(hash), nil
-	}
-	router := setupRouter()
-	body := `{"username":"u","password":"goodpw"}`
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/api/login", bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
+func TestApiLoginSuccess(t *testing.T) {
+    // ensure global db is non-nil to prevent nil deref
+    db, _ = sql.Open("sqlite", ":memory:")
 
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
-	resp := decode[AuthResponse](t, w.Body.Bytes())
-	assert.Equal(t, "login successful", *resp.Message)
+    // create bcrypt hash for the expected password
+    hash, _ := bcrypt.GenerateFromPassword([]byte("goodpw"), bcrypt.DefaultCost) //NOSONAR
+
+    // mock database query
+    mockGetUserByUsernameQuery = func(_ *sql.DB, u string) (int, string, string, string, error) {
+        return 1, "u", "e@example.com", string(hash), nil
+    }
+    GetUserByUsernameQuery = func(db *sql.DB, u string) (int, string, string, string, error) {
+        return mockGetUserByUsernameQuery(db, u)
+    }
+
+    router := setupRouter()
+    body := `{"username":"u","password":"goodpw"}`
+    w := httptest.NewRecorder()
+    req, _ := http.NewRequest("POST", "/api/login", bytes.NewBufferString(body))
+    req.Header.Set("Content-Type", "application/json")
+
+    router.ServeHTTP(w, req)
+
+    assert.Equal(t, http.StatusOK, w.Code, "should return 200 OK")
+
+    resp := decode[AuthResponse](t, w.Body.Bytes())
+    if assert.NotNil(t, resp.Message, "response message should not be nil") {
+        assert.Equal(t, "login successful", *resp.Message)
+    }
+    if assert.NotNil(t, resp.StatusCode, "status code should not be nil") {
+        assert.Equal(t, 200, *resp.StatusCode)
+    }
 }
+
 
 // --- /api/logout ---
 

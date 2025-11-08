@@ -162,7 +162,11 @@ func fetchWeather(key, lat, lon, days, units string) ([]byte, bool) {
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return nil, false
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("[WEATHER] Error closing response body: %v", cerr)
+		}
+	}()
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -382,8 +386,6 @@ func normalizeOpenMeteo(raw []byte) (wxOut, string, error) {
 	return o, r.Timezone, nil
 }
 
-func ptr[T any](v T) *T { return &v }
-
 // ==== Middleware ====
 
 func loggingMiddleware() gin.HandlerFunc {
@@ -397,7 +399,23 @@ func loggingMiddleware() gin.HandlerFunc {
 // ==== Main ====
 
 func main() {
-	defer db.Close()
+	// --- Setup file logging ---
+	logPath := "/usr/src/app/data/server.log"
+	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+    	log.Fatalf("Failed to open log file: %v", err)
+	}
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	// --------------------------
+
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing DB: %v", err)
+		}
+	}()
+
 	router := gin.New()
 	router.Use(gin.Recovery(), loggingMiddleware())
 
