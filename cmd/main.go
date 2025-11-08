@@ -101,75 +101,95 @@ func init() {
 // ==== API Endpoints ====
 
 func apiWeather(c *gin.Context) {
-	lat, lon := "55.6761", "12.5683" // Copenhagen
-	days, units := "5", "metric"
+	const (
+		lat   = "55.6761" // Copenhagen
+		lon   = "12.5683"
+		days  = "5"
+		units = "metric"
+	)
 	key := lat + "|" + lon + "|" + days + "|" + units
 
-	// Try cache first
-	wxCache.mu.RLock()
-	ce, ok := wxCache.m[key]
-	wxCache.mu.RUnlock()
-	if ok && time.Now().Before(ce.expires) {
+	// 1. Try cache
+	if payload, ok := getCached(key); ok {
 		c.Header("X-Cache", "HIT")
-		c.Data(http.StatusOK, "application/json", ce.payload)
+		c.Data(http.StatusOK, "application/json", payload)
 		return
 	}
 
-	var payload []byte
-	success := false
-
-	url := buildOpenMeteoURL(lat, lon, days, units)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err == nil {
-		req.Header.Set("User-Agent", "who-knows-weather/1.0")
-
-		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-		defer cancel()
-
-		resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-		if err == nil {
-			defer resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
-				if raw, err := io.ReadAll(resp.Body); err == nil {
-					if out, tz, err := normalizeOpenMeteo(raw); err == nil {
-						out.Source = "open-meteo"
-						out.Updated = time.Now().UTC().Format(time.RFC3339)
-						out.Timezone = tz
-
-						if payload, err = json.Marshal(StandardResponse{Data: out}); err == nil {
-							// Cache fresh data
-							wxCache.mu.Lock()
-							wxCache.m[key] = cacheEntry{payload, time.Now().Add(cacheTTL)}
-							wxCache.mu.Unlock()
-							success = true
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if success {
+	// 2. Try to fetch from upstream
+	payload, ok := fetchWeather(key, lat, lon, days, units)
+	if ok {
 		c.Header("X-Cache", "MISS")
 		c.Data(http.StatusOK, "application/json", payload)
 		return
 	}
 
-	// On any error, serve cached or empty
-	wxCache.mu.RLock()
-	ce, ok = wxCache.m[key]
-	wxCache.mu.RUnlock()
-	if ok && time.Now().Before(ce.expires) {
+	// 3. Fallback to cache or empty
+	if payload, ok := getCached(key); ok {
 		c.Header("X-Cache", "STALE")
-		c.Data(http.StatusOK, "application/json", ce.payload)
+		c.Data(http.StatusOK, "application/json", payload)
 		return
 	}
 
-	// Empty fallback
+	// 4. Empty fallback
 	payload, _ = json.Marshal(StandardResponse{Data: struct{}{}})
 	c.Header("X-Cache", "EMPTY")
 	c.Data(http.StatusOK, "application/json", payload)
 }
+
+func getCached(key string) ([]byte, bool) {
+	wxCache.mu.RLock()
+	defer wxCache.mu.RUnlock()
+	ce, ok := wxCache.m[key]
+	if !ok || time.Now().After(ce.expires) {
+		return nil, false
+	}
+	return ce.payload, true
+}
+
+func fetchWeather(key, lat, lon, days, units string) ([]byte, bool) {
+	url := buildOpenMeteoURL(lat, lon, days, units)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, false
+	}
+	req.Header.Set("User-Agent", "who-knows-weather/1.0")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return nil, false
+	}
+	defer resp.Body.Close()
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, false
+	}
+
+	out, tz, err := normalizeOpenMeteo(raw)
+	if err != nil {
+		return nil, false
+	}
+
+	out.Source = "open-meteo"
+	out.Updated = time.Now().UTC().Format(time.RFC3339)
+	out.Timezone = tz
+
+	payload, err := json.Marshal(StandardResponse{Data: out})
+	if err != nil {
+		return nil, false
+	}
+
+	wxCache.mu.Lock()
+	wxCache.m[key] = cacheEntry{payload, time.Now().Add(cacheTTL)}
+	wxCache.mu.Unlock()
+
+	return payload, true
+}
+
 
 func apiSearch(c *gin.Context) {
 	q := c.Query("q")
@@ -296,7 +316,7 @@ func apiLogout(c *gin.Context) {
 func apiSession(c *gin.Context) {
 	_, err := c.Cookie("user_id")
 	if err != nil {
-		log.Printf("[SESSION] Error getting user_id cookie: %v", err)
+		log.Printf("[SESSION] Error getting user_id cookie")
 		code := 401
 		msg := "not logged in"
 		c.JSON(http.StatusOK, AuthResponse{&code, &msg})
