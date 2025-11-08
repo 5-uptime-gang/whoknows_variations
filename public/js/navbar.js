@@ -3,7 +3,7 @@ async function checkSession() {
     const res = await fetch("/api/session", { credentials: "include" });
     const data = await res.json();
 
-    if (data.logged_in) {
+    if (data.statusCode === 200) {
       document.getElementById("nav-logout").style.display = "inline-block";
       document.getElementById("nav-login").style.display = "none";
       document.getElementById("nav-register").style.display = "none";

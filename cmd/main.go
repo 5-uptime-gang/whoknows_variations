@@ -9,26 +9,18 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sync"
 	"time"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
 
-// ==== Users + Auth ====
+// ==== Data Structures ====
 
-type User struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"-"` // "-" skjuler password i JSON output
-}
-
-// --- Weather types + tiny cache ---
 type wxDay struct {
 	Date string  `json:"date"`
 	TMin float64 `json:"tMin"`
@@ -41,30 +33,54 @@ type wxOut struct {
 	Timezone string  `json:"timezone"`
 	Days     []wxDay `json:"daily"`
 }
-type apiEnvelope struct {
+
+// API Response Schemas
+type StandardResponse struct {
 	Data any `json:"data"`
 }
+
+type SearchResponse struct {
+	Data []Page `json:"data"`
+}
+
+type AuthResponse struct {
+	StatusCode *int    `json:"statusCode"`
+	Message    *string `json:"message"`
+}
+
+type ValidationError struct {
+	Loc  []any  `json:"loc"`
+	Msg  string `json:"msg"`
+	Type string `json:"type"`
+}
+
+type HTTPValidationError struct {
+	Detail []ValidationError `json:"detail"`
+}
+
+type RequestValidationError struct {
+	StatusCode int     `json:"statusCode" default:"422"`
+	Message    *string `json:"message"`
+}
+
 type cacheEntry struct {
 	payload []byte
 	expires time.Time
 }
 
 var (
-	cacheTimeToLiveMinutes = 15
-	cacheTTL               = time.Duration(cacheTimeToLiveMinutes) * time.Minute
-	wxCache                = struct {
+	cacheTTL = 15 * time.Minute
+	wxCache  = struct {
 		mu sync.RWMutex
 		m  map[string]cacheEntry
 	}{m: make(map[string]cacheEntry)}
+	db *sql.DB
 )
 
-// ==== Database initializer ====
-var db *sql.DB
+// ==== Initialization ====
 
 func init() {
 	const dbPath = "/usr/src/app/data/whoknows.db"
-
-	// If the DB file doesn't exist, we'll need to initialize it
 	dbExists := true
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		dbExists = false
@@ -73,101 +89,263 @@ func init() {
 	var err error
 	db, err = sql.Open("sqlite", dbPath)
 	if err != nil {
-		log.Fatalf("Failed to open database at %s: %v", dbPath, err)
+		log.Fatalf("Failed to open DB: %v", err)
 	}
-
 	if !dbExists {
-		log.Println("Database not found — initializing schema and seed data...")
 		if err := InitDB(db); err != nil {
-			log.Fatalf("Failed to initialize database: %v", err)
+			log.Fatalf("DB init failed: %v", err)
 		}
-		log.Println("Database initialized successfully")
-	} else {
-		log.Println("Database already exists — skipping initialization")
 	}
 }
 
 // ==== API Endpoints ====
 
 func apiWeather(c *gin.Context) {
-	lat, lon := "55.6761", "12.5683" // Copenhagen
-	days, units := "5", "metric"
+	const (
+		lat   = "55.6761" // Copenhagen
+		lon   = "12.5683"
+		days  = "5"
+		units = "metric"
+	)
 	key := lat + "|" + lon + "|" + days + "|" + units
 
-	// 1) cache
-	wxCache.mu.RLock()
-	ce, ok := wxCache.m[key]
-	wxCache.mu.RUnlock()
-	if ok && time.Now().Before(ce.expires) {
+	// 1. Try cache
+	if payload, ok := getCached(key); ok {
 		c.Header("X-Cache", "HIT")
-		c.Data(http.StatusOK, "application/json", ce.payload)
+		c.Data(http.StatusOK, "application/json", payload)
 		return
 	}
 
-	// 2) upstream call
+	// 2. Try to fetch from upstream
+	payload, ok := fetchWeather(key, lat, lon, days, units)
+	if ok {
+		c.Header("X-Cache", "MISS")
+		c.Data(http.StatusOK, "application/json", payload)
+		return
+	}
+
+	// 3. Fallback to cache or empty
+	if payload, ok := getCached(key); ok {
+		c.Header("X-Cache", "STALE")
+		c.Data(http.StatusOK, "application/json", payload)
+		return
+	}
+
+	// 4. Empty fallback
+	payload, _ = json.Marshal(StandardResponse{Data: struct{}{}})
+	c.Header("X-Cache", "EMPTY")
+	c.Data(http.StatusOK, "application/json", payload)
+}
+
+func getCached(key string) ([]byte, bool) {
+	wxCache.mu.RLock()
+	defer wxCache.mu.RUnlock()
+	ce, ok := wxCache.m[key]
+	if !ok || time.Now().After(ce.expires) {
+		return nil, false
+	}
+	return ce.payload, true
+}
+
+func fetchWeather(key, lat, lon, days, units string) ([]byte, bool) {
 	url := buildOpenMeteoURL(lat, lon, days, units)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "request build failed"})
-		return
+		return nil, false
 	}
-	req.Header.Set("User-Agent", "who-knows-weather/1.0 (+contact: example@example.com)")
+	req.Header.Set("User-Agent", "who-knows-weather/1.0")
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
-		return
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return nil, false
 	}
-	// make errcheck happy + do the right thing
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			log.Printf("resp body close error: %v", cerr)
+			log.Printf("[WEATHER] Error closing response body: %v", cerr)
 		}
 	}()
 
-	if resp.StatusCode >= 500 {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "upstream unavailable"})
-		return
-	}
-	if resp.StatusCode >= 400 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request to upstream"})
-		return
-	}
-
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "read upstream failed"})
-		return
+		return nil, false
 	}
 
-	// 3) normalize provider JSON to our stable shape
 	out, tz, err := normalizeOpenMeteo(raw)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "normalize failed"})
-		return
+		return nil, false
 	}
+
 	out.Source = "open-meteo"
 	out.Updated = time.Now().UTC().Format(time.RFC3339)
 	out.Timezone = tz
 
-	// 4) wrap as { "data": ... } to match your spec
-	payload, err := json.Marshal(apiEnvelope{Data: out})
+	payload, err := json.Marshal(StandardResponse{Data: out})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "marshal failed"})
+		return nil, false
+	}
+
+	wxCache.mu.Lock()
+	wxCache.m[key] = cacheEntry{payload, time.Now().Add(cacheTTL)}
+	wxCache.mu.Unlock()
+
+	return payload, true
+}
+
+
+func apiSearch(c *gin.Context) {
+	q := c.Query("q")
+	if q == "" {
+		msg := "Query parameter 'q' is required"
+		log.Printf("[SEARCH] Invalid request: %v", msg)
+		c.JSON(http.StatusUnprocessableEntity, RequestValidationError{StatusCode: 422, Message: &msg})
+		return
+	}
+	lang := c.DefaultQuery("language", "en")
+	results, err := SearchPagesQuery(db, q, lang)
+	if err != nil {
+		msg := "Search failed: " + err.Error()
+		log.Printf("[SEARCH] Search failed: %v", msg)
+		c.JSON(http.StatusUnprocessableEntity, RequestValidationError{StatusCode: 422, Message: &msg})
 		return
 	}
 
-	// 5) save to cache + return
-	wxCache.mu.Lock()
-	wxCache.m[key] = cacheEntry{payload: payload, expires: time.Now().Add(cacheTTL)}
-	wxCache.mu.Unlock()
+	safeQ := strings.ReplaceAll(strings.ReplaceAll(q, "\n", "_"), "\r", "_")
+	safeLang := strings.ReplaceAll(strings.ReplaceAll(lang, "\n", "_"), "\r", "_")
 
-	c.Header("X-Cache", "MISS")
-	c.Data(http.StatusOK, "application/json", payload)
+	log.Printf("[SEARCH] Search successful: q=%q, lang=%q", safeQ, safeLang)
+	c.JSON(http.StatusOK, SearchResponse{Data: results})
 }
+
+func apiLogin(c *gin.Context) {
+	var creds struct {
+		Username string `form:"username" json:"username"`
+		Password string `form:"password" json:"password"`
+	}
+	if err := c.ShouldBind(&creds); err != nil {
+		log.Printf("[LOGIN] Invalid form data: %v", err)
+		c.JSON(422, HTTPValidationError{Detail: []ValidationError{{Loc: []any{"body", 0}, Msg: "invalid form data", Type: "validation_error"}}})
+		return
+	}
+
+	id, _, _, hashed, err := GetUserByUsernameQuery(db, creds.Username)
+	if err != nil {
+		log.Printf("[LOGIN] Invalid username: %s", creds.Username)
+		c.JSON(422, HTTPValidationError{Detail: []ValidationError{{Loc: []any{"username", 0}, Msg: "invalid username", Type: "auth_error"}}})
+		return
+	}
+	if bcrypt.CompareHashAndPassword([]byte(hashed), []byte(creds.Password)) != nil {
+		log.Printf("[LOGIN] Invalid password for username: %s", creds.Username)
+		c.JSON(422, HTTPValidationError{Detail: []ValidationError{{Loc: []any{"password", 0}, Msg: "invalid password", Type: "auth_error"}}})
+		return
+	}
+
+	util.SetAuthCookie(c, id)
+	code := 200
+	msg := "login successful"
+	log.Printf("[LOGIN] Login successful for username: %s", creds.Username)
+	c.JSON(http.StatusOK, AuthResponse{&code, &msg})
+}
+
+func apiRegister(c *gin.Context) {
+	var form struct {
+		Username  string `form:"username" json:"username"`
+		Email     string `form:"email" json:"email"`
+		Password  string `form:"password" json:"password"`
+		Password2 string `form:"password2" json:"password2"`
+	}
+	if err := c.ShouldBind(&form); err != nil {
+		log.Printf("[REGISTER] Invalid form data: %v", err)
+		sendValidationError(c, "body", "invalid form data")
+		return
+	}
+
+	if form.Username == "" {
+		log.Printf("[REGISTER] Missing username")
+		sendValidationError(c, "username", "you have to enter a username")
+		return
+	}
+	if form.Email == "" || !regexp.MustCompile(`.+@.+\..+`).MatchString(form.Email) {
+		log.Printf("[REGISTER] Invalid email: %q", form.Email)
+		sendValidationError(c, "email", "you have to enter a valid email address")
+		return
+	}
+	if form.Password == "" {
+		log.Printf("[REGISTER] Missing password for username=%q", form.Username)
+		sendValidationError(c, "password", "you have to enter a password")
+		return
+	}
+	if form.Password != form.Password2 {
+		log.Printf("[REGISTER] Password mismatch for username=%q", form.Username)
+		sendValidationError(c, "password2", "the two passwords do not match")
+		return
+	}
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
+	if _, err := InsertUserQuery(db, form.Username, form.Email, string(hash)); err != nil {
+		log.Printf("[REGISTER] Database error: %v", err)
+		c.JSON(422, HTTPValidationError{Detail: []ValidationError{{Loc: []any{"database", 0}, Msg: "username or email taken", Type: "db_error"}}})
+		return
+	}
+
+	log.Printf("[REGISTER] User registered: %s", form.Username)
+
+	code := 200
+	msg := "user registered successfully"
+	c.JSON(http.StatusOK, AuthResponse{&code, &msg})
+}
+
+func sendValidationError(c *gin.Context, field, msg string) {
+	c.JSON(http.StatusUnprocessableEntity, HTTPValidationError{
+		Detail: []ValidationError{{
+			Loc:  []any{field, 0},
+			Msg:  msg,
+			Type: "validation_error",
+		}},
+	})
+}
+
+func apiLogout(c *gin.Context) {
+	util.RemoveAuthCookie(c)
+	code := 200
+	msg := "logged out"
+	log.Printf("[LOGOUT] Logout request from IP=%s", c.ClientIP())
+	c.JSON(http.StatusOK, AuthResponse{&code, &msg})
+}
+
+// ==== Session Endpoint ====
+
+func apiSession(c *gin.Context) {
+	_, err := c.Cookie("user_id")
+	if err != nil {
+		log.Printf("[SESSION] Error getting user_id cookie")
+		code := 401
+		msg := "not logged in"
+		c.JSON(http.StatusOK, AuthResponse{&code, &msg})
+		return
+	}
+
+	log.Printf("[SESSION] Valid session detected from IP=%s", c.ClientIP())
+	
+	code := 200
+	msg := "logged in"
+	c.JSON(http.StatusOK, AuthResponse{&code, &msg})
+}
+
+// ==== Static / HTML Endpoints ====
+
+func serveHTML(c *gin.Context, path string) {
+	c.File(path)
+}
+
+func serveIndexFile(c *gin.Context)    { serveHTML(c, "./public/index.html") }
+func serveLoginFile(c *gin.Context)    { serveHTML(c, "./public/login.html") }
+func serveRegisterFile(c *gin.Context) { serveHTML(c, "./public/register.html") }
+func serverWeatherFile(c *gin.Context) { serveHTML(c, "./public/weather.html") }
+
+// ==== Helper ====
 
 func buildOpenMeteoURL(lat, lon, days, units string) string {
 	tempUnit := "celsius"
@@ -208,222 +386,20 @@ func normalizeOpenMeteo(raw []byte) (wxOut, string, error) {
 	return o, r.Timezone, nil
 }
 
-func apiLogin(c *gin.Context) {
-	var creds struct {
-		Username string `json:"username" form:"username"`
-		Password string `json:"password" form:"password"`
-	}
-
-	if err := c.ShouldBind(&creds); err != nil {
-		log.Printf("[LOGIN] Failed to bind creds: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-		return
-	}
-
-	log.Printf("[LOGIN] Attempt for user=%s", creds.Username)
-
-	id, username, email, hashedPassword, err := GetUserByUsernameQuery(db, creds.Username)
-	if err != nil {
-		log.Printf("[LOGIN] Invalid username: %s (err=%v)", creds.Username, err)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username"})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(creds.Password)); err != nil {
-		log.Printf("[LOGIN] Wrong password for user=%s", creds.Username)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
-		return
-	}
-
-	log.Printf("[LOGIN] SUCCESS: user=%s id=%d", creds.Username, id)
-	util.SetAuthCookie(c, id)
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":  "login successful",
-		"user_id":  id,
-		"username": username,
-		"email":    email,
-	})
-}
-
-func apiRegister(c *gin.Context) {
-	var form struct {
-		Username  string `json:"username"`
-		Email     string `json:"email"`
-		Password  string `json:"password"`
-		Password2 string `json:"password2"`
-	}
-
-	if err := c.ShouldBindJSON(&form); err != nil {
-		log.Printf("[REGISTER] Invalid request body: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
-		return
-	}
-
-	log.Printf("[REGISTER] Attempt: username=%q email=%q", form.Username, form.Email)
-
-	// Validation
-	if form.Username == "" {
-		log.Printf("[REGISTER] Missing username")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a username"})
-		return
-	}
-	if form.Email == "" || !regexp.MustCompile(`.+@.+\..+`).MatchString(form.Email) {
-		log.Printf("[REGISTER] Invalid email: %q", form.Email)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a valid email address"})
-		return
-	}
-	if form.Password == "" {
-		log.Printf("[REGISTER] Missing password for username=%q", form.Username)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "you have to enter a password"})
-		return
-	}
-	if form.Password != form.Password2 {
-		log.Printf("[REGISTER] Password mismatch for username=%q", form.Username)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "the two passwords do not match"})
-		return
-	}
-
-	// Hash password
-	hash, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Printf("[REGISTER] Password hashing failed for %q: %v", form.Username, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
-		return
-	}
-
-	userID, err := InsertUserQuery(db, form.Username, form.Email, string(hash))
-	if err != nil {
-		log.Printf("[REGISTER] DB insert failed for %q: %v", form.Username, err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username or email already taken"})
-		return
-	}
-
-	util.SetAuthCookie(c, int(userID))
-	log.Printf("[REGISTER] SUCCESS: userID=%d username=%q email=%q", userID, form.Username, form.Email)
-
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "user registered successfully",
-		"user_id": userID,
-	})
-}
-
-
-func apiLogout(c *gin.Context) {
-	// overwrite cookie with empty value and expired time
-	util.RemoveAuthCookie(c)
-
-	userIP := c.ClientIP()
-	log.Printf("[LOGOUT] Logout request from IP=%s", userIP)
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "logged out",
-		"status":  "ok",
-	})
-}
-
-
-func apiSearch(c *gin.Context) {
-	q := c.Query("q")
-	if q == "" {
-		log.Printf("[SEARCH] Missing query parameter 'q'")
-		c.JSON(422, gin.H{
-			"statusCode": 422,
-			"message":    "Query parameter 'q' is required",
-		})
-		return
-	}
-
-	lang := c.DefaultQuery("language", "en")
-	log.Printf("[SEARCH] Query started: q=%q lang=%q", q, lang)
-
-	results, err := SearchPagesQuery(db, q, lang)
-	if err != nil {
-		log.Printf("[SEARCH] Failed: q=%q err=%v", q, err)
-		c.JSON(422, gin.H{
-			"statusCode": 422,
-			"message":    "Search failed: " + err.Error(),
-		})
-		return
-	}
-
-	log.Printf("[SEARCH] Completed: q=%q results=%d", q, len(results))
-	c.JSON(200, gin.H{
-		"data": results,
-	})
-}
-
-
-func apiSession(c *gin.Context) {
-	_, err := c.Cookie("user_id")
-	if err != nil {
-		log.Printf("[SESSION] No session cookie found from IP=%s", c.ClientIP())
-		c.JSON(http.StatusOK, gin.H{"logged_in": false})
-		return
-	}
-
-	log.Printf("[SESSION] Valid session detected from IP=%s", c.ClientIP())
-	c.JSON(http.StatusOK, gin.H{"logged_in": true})
-}
-
-
-func serveLoginRegisterFiles(c *gin.Context, fp string) {
-	// Debug: confirm file exists and size
-	if info, err := filepath.Abs(fp); err == nil {
-		log.Println("Serving:", info)
-	}
-	// If it doesn't exist, Gin would 404. We'll log size after write below.
-
-	// Important: don't return before writing the body
-	c.File(fp) // sets 200 + streams file if found
-}
-
-func serveLoginFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/login.html")
-}
-
-func serveRegisterFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/register.html")
-}
-
-func serverWeatherFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/weather.html")
-}
-
-func serverAboutFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/about.html")
-}
-
-func serveIndexFile(c *gin.Context) {
-	serveLoginRegisterFiles(c, "./public/index.html")
-}
+// ==== Middleware ====
 
 func loggingMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		method := c.Request.Method
-		path := c.Request.URL.Path
-		clientIP := c.ClientIP()
-
-		log.Printf("[REQ] %s %s from %s", method, path, clientIP)
-
-		c.Next() // process the request
-
-		status := c.Writer.Status()
-		duration := time.Since(start)
-		log.Printf("[RESP] %s %s -> %d (%v)", method, path, status, duration)
+		c.Next()
+		log.Printf("[REQ] %s %s -> %d (%v)", c.Request.Method, c.Request.URL.Path, c.Writer.Status(), time.Since(start))
 	}
 }
 
-// ==== Main entry ====
+// ==== Main ====
 
 func main() {
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("Error closing DB: %v", err)
-		}
-	}()
-
+	// --- Setup file logging ---
 	logPath := "/usr/src/app/data/server.log"
 	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -432,32 +408,34 @@ func main() {
 	mw := io.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(mw)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	// --------------------------
+
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing DB: %v", err)
+		}
+	}()
 
 	router := gin.New()
-    router.Use(gin.Recovery(), loggingMiddleware())
-
-	const PORT = ":8080"
+	router.Use(gin.Recovery(), loggingMiddleware())
 
 	api := router.Group("/api")
 	{
+		api.GET("/weather", apiWeather)
+		api.GET("/search", apiSearch)
 		api.POST("/login", apiLogin)
 		api.POST("/register", apiRegister)
 		api.GET("/logout", apiLogout)
-		api.GET("/search", apiSearch)
 		api.GET("/session", apiSession)
-		api.GET("/weather", apiWeather)
 	}
 
 	router.GET("/", serveIndexFile)
 	router.GET("/login", serveLoginFile)
 	router.GET("/register", serveRegisterFile)
 	router.GET("/weather", serverWeatherFile)
-	router.GET("/about", serverAboutFile)
-
-	// This makes everything in ./public available under /public
 	router.Static("/public", "./public")
 
-	if err := router.Run(PORT); err != nil {
+	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

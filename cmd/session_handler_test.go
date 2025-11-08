@@ -5,40 +5,28 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
-func newRouterWithSessionOnly() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
-	api := r.Group("/api")
-	api.GET("/session", apiSession)
-	return r
+func TestSessionNotLoggedIn(t *testing.T) {
+	router := setupRouter()
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/session", nil)
+
+	router.ServeHTTP(w, req)
+	resp := decode[AuthResponse](t, w.Body.Bytes())
+	assert.Equal(t, 401, *resp.StatusCode)
+	assert.Equal(t, "not logged in", *resp.Message)
 }
 
-func TestSession_NotLoggedIn(t *testing.T) {
-	r := newRouterWithSessionOnly()
-	req := httptest.NewRequest(http.MethodGet, "/api/session", nil)
+func TestSessionLoggedIn(t *testing.T) {
+	router := setupRouter()
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("want 200, got %d", w.Code)
-	}
-	if w.Body.String() != `{"logged_in":false}` {
-		t.Fatalf("bad body: %s", w.Body.String())
-	}
-}
+	req, _ := http.NewRequest("GET", "/api/session", nil)
+	req.AddCookie(&http.Cookie{Name: "user_id", Value: "1"})
 
-func TestSession_LoggedIn(t *testing.T) {
-	r := newRouterWithSessionOnly()
-	req := httptest.NewRequest(http.MethodGet, "/api/session", nil)
-	req.AddCookie(&http.Cookie{Name: "user_id", Value: "123"})
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("want 200, got %d", w.Code)
-	}
-	if w.Body.String() != `{"logged_in":true}` {
-		t.Fatalf("bad body: %s", w.Body.String())
-	}
+	router.ServeHTTP(w, req)
+	resp := decode[AuthResponse](t, w.Body.Bytes())
+	assert.Equal(t, 200, *resp.StatusCode)
+	assert.Equal(t, "logged in", *resp.Message)
 }

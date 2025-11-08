@@ -24,13 +24,19 @@ services:
       - "80:80"
     volumes:
       - ./nginx/conf-dev:/etc/nginx/conf.d:ro
-      - ./src/public:/usr/src/app/src/public:ro
+      - ./public:/usr/src/app/src/public:ro
     depends_on:
       - whoknows_variations_dev
     networks:
       - appnet
     restart: unless-stopped
 
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: go test -v ./...
+    
 volumes:
   go-mod-cache:
   dev-data:

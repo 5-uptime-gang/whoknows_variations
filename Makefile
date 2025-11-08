@@ -27,6 +27,7 @@ help:
 	@echo "  make dev-d        Run development environment with auto-reload in detached mode"
 	@echo "  make stop-dev     Stop development environment"
 	@echo "  make reset-dev    Stop and remove dev volumes"
+	@echo "  make dev-test     Run development environment with auto-reload and tests"
 
 # ===============================
 # Development mode (auto-reload with Air)
@@ -39,7 +40,7 @@ dev:
 		exit 1; \
 	fi
 	@echo "[STARTING] Starting development environment with Air..."
-	$(DEV_COMPOSE) up --build
+	$(DEV_COMPOSE) up --build whoknows_variations_dev nginx_dev
 
 .PHONY: dev-d
 dev-d:
@@ -49,7 +50,7 @@ dev-d:
 		exit 1; \
 	fi
 	@echo "[STARTING] Starting development environment with Air in detached mode..."
-	$(DEV_COMPOSE) up -d --build
+	$(DEV_COMPOSE) up -d --build whoknows_variations_dev nginx_dev
 
 .PHONY: stop-dev
 stop-dev:
@@ -62,3 +63,13 @@ reset-dev:
 	@echo "[STOPPING] Removing dev containers and volumes..."
 	$(DEV_COMPOSE) down -v
 	@echo "[DONE] Dev containers and volumes removed."
+
+.PHONY: dev-test
+dev-test:
+	$(call check_docker)
+	@if [ ! -f $(AIR_FILE) ]; then \
+		echo "[FAIL] .air.toml not found! Please create it before running dev mode."; \
+		exit 1; \
+	fi
+	@echo "[STARTING] Starting development environment with Air and tests..."
+	$(DEV_COMPOSE) run --rm test

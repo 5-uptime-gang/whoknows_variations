@@ -27,7 +27,7 @@ document.getElementById("loginForm").addEventListener("submit", (e) => {
         window.location.href = "/";
       } else {
         // Show error message
-        errorMessage.textContent = data.error || "Login failed";
+        errorMessage.textContent = data.detail[0].msg || "Login failed";
         errorMessage.style.display = "block";
       }
     })
