@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSession_NotLoggedIn(t *testing.T) {
+func TestSessionNotLoggedIn(t *testing.T) {
 	router := setupRouter()
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/session", nil)
@@ -19,7 +19,7 @@ func TestSession_NotLoggedIn(t *testing.T) {
 	assert.Equal(t, "not logged in", *resp.Message)
 }
 
-func TestSession_LoggedIn(t *testing.T) {
+func TestSessionLoggedIn(t *testing.T) {
 	router := setupRouter()
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/session", nil)

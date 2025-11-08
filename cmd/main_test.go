@@ -62,7 +62,7 @@ func decode[T any](t *testing.T, body []byte) T {
 
 // --- /api/register ---
 
-func TestRegister_ValidationErrors(t *testing.T) {
+func TestRegisterValidationErrors(t *testing.T) {
 	router := setupRouter()
 	body := `{"email":"x@y.z","password":"abc","password2":"abc"}`
 	w := httptest.NewRecorder()
@@ -73,7 +73,7 @@ func TestRegister_ValidationErrors(t *testing.T) {
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 }
 
-func TestRegister_Success(t *testing.T) {
+func TestRegisterSuccess(t *testing.T) {
 	mockInsertUserQuery = func(_ *sql.DB, u, e, p string) (int64, error) { return 1, nil }
 
 	router := setupRouter()
@@ -90,7 +90,7 @@ func TestRegister_Success(t *testing.T) {
 	assert.Equal(t, "user registered successfully", *resp.Message)
 }
 
-func TestRegister_UsernameTaken(t *testing.T) {
+func TestRegisterUsernameTaken(t *testing.T) {
 	mockInsertUserQuery = func(_ *sql.DB, u, e, p string) (int64, error) { return 0, errors.New("duplicate") }
 
 	router := setupRouter()
@@ -108,7 +108,7 @@ func TestRegister_UsernameTaken(t *testing.T) {
 
 // --- /api/login ---
 
-func TestLogin_InvalidBody(t *testing.T) {
+func TestLoginInvalidBody(t *testing.T) {
 	router := setupRouter()
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/api/login", bytes.NewBufferString("invalid-json"))
@@ -118,7 +118,7 @@ func TestLogin_InvalidBody(t *testing.T) {
 	assert.Equal(t, 422, w.Code)
 }
 
-func TestLogin_InvalidUsername(t *testing.T) {
+func TestLoginInvalidUsername(t *testing.T) {
 	mockGetUserByUsernameQuery = func(_ *sql.DB, u string) (int, string, string, string, error) {
 		return 0, "", "", "", errors.New("not found")
 	}
@@ -134,8 +134,8 @@ func TestLogin_InvalidUsername(t *testing.T) {
 	assert.Equal(t, "username", resp.Detail[0].Loc[0])
 }
 
-func TestLogin_WrongPassword(t *testing.T) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("goodpw"), bcrypt.DefaultCost)
+func TestLoginWrongPassword(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("testpassword"), bcrypt.DefaultCost) //NOSONAR
 	mockGetUserByUsernameQuery = func(_ *sql.DB, u string) (int, string, string, string, error) {
 		return 1, "u", "e", string(hash), nil
 	}
@@ -151,8 +151,8 @@ func TestLogin_WrongPassword(t *testing.T) {
 	assert.Equal(t, "password", resp.Detail[0].Loc[0])
 }
 
-func TestLogin_Success(t *testing.T) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("goodpw"), bcrypt.DefaultCost)
+func TestLoginSuccess(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("testpassword"), bcrypt.DefaultCost) //NOSONAR
 	mockGetUserByUsernameQuery = func(_ *sql.DB, u string) (int, string, string, string, error) {
 		return 1, "u", "e", string(hash), nil
 	}
@@ -183,7 +183,7 @@ func TestLogout(t *testing.T) {
 
 // --- /api/search ---
 
-func TestSearch_MissingQuery(t *testing.T) {
+func TestSearchMissingQuery(t *testing.T) {
 	router := setupRouter()
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/search", nil)
@@ -195,7 +195,7 @@ func TestSearch_MissingQuery(t *testing.T) {
 	assert.Contains(t, *resp.Message, "required")
 }
 
-func TestSearch_DBError(t *testing.T) {
+func TestSearchDBError(t *testing.T) {
 	mockSearchPagesQuery = func(_ *sql.DB, q, l string) ([]Page, error) {
 		return nil, errors.New("boom")
 	}
@@ -209,7 +209,7 @@ func TestSearch_DBError(t *testing.T) {
 	assert.Contains(t, *resp.Message, "Search failed")
 }
 
-func TestSearch_Success(t *testing.T) {
+func TestSearchSuccess(t *testing.T) {
 	mockSearchPagesQuery = func(_ *sql.DB, q, l string) ([]Page, error) {
 		return []Page{
 			{

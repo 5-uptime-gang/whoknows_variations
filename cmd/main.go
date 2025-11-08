@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"sync"
 	"time"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -104,7 +105,7 @@ func apiWeather(c *gin.Context) {
 	days, units := "5", "metric"
 	key := lat + "|" + lon + "|" + days + "|" + units
 
-	// Cache lookup
+	// Try cache first
 	wxCache.mu.RLock()
 	ce, ok := wxCache.m[key]
 	wxCache.mu.RUnlock()
@@ -114,36 +115,59 @@ func apiWeather(c *gin.Context) {
 		return
 	}
 
+	var payload []byte
+	success := false
+
 	url := buildOpenMeteoURL(lat, lon, days, units)
-	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	req.Header.Set("User-Agent", "who-knows-weather/1.0")
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err == nil {
+		req.Header.Set("User-Agent", "who-knows-weather/1.0")
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-	defer cancel()
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
 
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
-	if err != nil {
-		c.JSON(http.StatusBadGateway, AuthResponse{nil, ptr("upstream unavailable")})
+		resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+		if err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				if raw, err := io.ReadAll(resp.Body); err == nil {
+					if out, tz, err := normalizeOpenMeteo(raw); err == nil {
+						out.Source = "open-meteo"
+						out.Updated = time.Now().UTC().Format(time.RFC3339)
+						out.Timezone = tz
+
+						if payload, err = json.Marshal(StandardResponse{Data: out}); err == nil {
+							// Cache fresh data
+							wxCache.mu.Lock()
+							wxCache.m[key] = cacheEntry{payload, time.Now().Add(cacheTTL)}
+							wxCache.mu.Unlock()
+							success = true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if success {
+		c.Header("X-Cache", "MISS")
+		c.Data(http.StatusOK, "application/json", payload)
 		return
 	}
-	defer resp.Body.Close()
 
-	raw, _ := io.ReadAll(resp.Body)
-	out, tz, err := normalizeOpenMeteo(raw)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, AuthResponse{nil, ptr("normalize failed")})
+	// On any error, serve cached or empty
+	wxCache.mu.RLock()
+	ce, ok = wxCache.m[key]
+	wxCache.mu.RUnlock()
+	if ok && time.Now().Before(ce.expires) {
+		c.Header("X-Cache", "STALE")
+		c.Data(http.StatusOK, "application/json", ce.payload)
 		return
 	}
-	out.Source = "open-meteo"
-	out.Updated = time.Now().UTC().Format(time.RFC3339)
-	out.Timezone = tz
 
-	payload, _ := json.Marshal(StandardResponse{Data: out})
-	wxCache.mu.Lock()
-	wxCache.m[key] = cacheEntry{payload, time.Now().Add(cacheTTL)}
-	wxCache.mu.Unlock()
-
-	c.Header("X-Cache", "MISS")
+	// Empty fallback
+	payload, _ = json.Marshal(StandardResponse{Data: struct{}{}})
+	c.Header("X-Cache", "EMPTY")
 	c.Data(http.StatusOK, "application/json", payload)
 }
 
@@ -163,7 +187,11 @@ func apiSearch(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, RequestValidationError{StatusCode: 422, Message: &msg})
 		return
 	}
-	log.Printf("[SEARCH] Search successful: q=%s, lang=%s", q, lang)
+
+	safeQ := strings.ReplaceAll(strings.ReplaceAll(q, "\n", "_"), "\r", "_")
+	safeLang := strings.ReplaceAll(strings.ReplaceAll(lang, "\n", "_"), "\r", "_")
+
+	log.Printf("[SEARCH] Search successful: q=%q, lang=%q", safeQ, safeLang)
 	c.JSON(http.StatusOK, SearchResponse{Data: results})
 }
 
@@ -268,7 +296,7 @@ func apiLogout(c *gin.Context) {
 func apiSession(c *gin.Context) {
 	_, err := c.Cookie("user_id")
 	if err != nil {
-		log.Printf("[SESSION] Error getting user_id cookie from IP=%s: %v", c.ClientIP(), err)
+		log.Printf("[SESSION] Error getting user_id cookie: %v", err)
 		code := 401
 		msg := "not logged in"
 		c.JSON(http.StatusOK, AuthResponse{&code, &msg})
