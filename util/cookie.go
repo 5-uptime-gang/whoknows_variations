@@ -13,7 +13,7 @@ func SetAuthCookie(c *gin.Context, userID int) {
         0, // maxAge in seconds; 0 means session cookie
         "/",
         "",
-        true,  // secure
+        false,  // secure
         true,  // httpOnly
     )
 }
@@ -25,7 +25,7 @@ func RemoveAuthCookie(c *gin.Context) {
         -1, // maxAge in seconds; -1 means delete cookie
         "/",
         "",
-        true,  // secure
+        false,  // secure
         true,  // httpOnly
     )
 }
