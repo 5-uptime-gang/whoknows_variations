@@ -284,7 +284,8 @@ func apiRegister(c *gin.Context) {
 	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
-	if _, err := InsertUserQuery(db, form.Username, form.Email, string(hash)); err != nil {
+	userID, err := InsertUserQuery(db, form.Username, form.Email, string(hash));
+	if err != nil {
 		log.Printf("[REGISTER] Database error: %v", err)
 		c.JSON(422, HTTPValidationError{Detail: []ValidationError{{Loc: []any{"database", 0}, Msg: "username or email taken", Type: "db_error"}}})
 		return
@@ -292,6 +293,7 @@ func apiRegister(c *gin.Context) {
 
 	log.Printf("[REGISTER] User registered: %s", form.Username)
 
+	util.SetAuthCookie(c, int(userID))
 	code := 200
 	msg := "user registered successfully"
 	c.JSON(http.StatusOK, AuthResponse{&code, &msg})
@@ -344,6 +346,7 @@ func serveIndexFile(c *gin.Context)    { serveHTML(c, "./public/index.html") }
 func serveLoginFile(c *gin.Context)    { serveHTML(c, "./public/login.html") }
 func serveRegisterFile(c *gin.Context) { serveHTML(c, "./public/register.html") }
 func serverWeatherFile(c *gin.Context) { serveHTML(c, "./public/weather.html") }
+func serveAboutFile(c *gin.Context)    { serveHTML(c, "./public/about.html") }
 
 // ==== Helper ====
 
@@ -433,6 +436,7 @@ func main() {
 	router.GET("/login", serveLoginFile)
 	router.GET("/register", serveRegisterFile)
 	router.GET("/weather", serverWeatherFile)
+	router.GET("/about", serveAboutFile)
 	router.Static("/public", "./public")
 
 	if err := router.Run(":8080"); err != nil {
