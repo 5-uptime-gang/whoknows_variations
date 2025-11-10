@@ -45,8 +45,6 @@ jobs:
             --tag ${IMAGE}:latest \
             --tag ${IMAGE}:${{ github.sha }} \
             --platform linux/amd64 \
-            --cache-from=type=registry,ref=${IMAGE}:latest \
-            --cache-to=type=registry,ref=${IMAGE}:latest,mode=max \
             --push .
 
       - name: Optionally Build and Push Nginx Image
@@ -68,6 +66,15 @@ jobs:
         run: |
           echo "App image: ghcr.io/${{ github.repository_owner }}/whoknows_variations:latest"
           echo "(Optional) Nginx image: ghcr.io/${{ github.repository_owner }}/nginx:latest"
+
+      - name: Trigger Continuous Deployment workflow
+        if: ${{ success() }}
+        uses: peter-evans/workflow-dispatch@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          workflow: "Continuous Deployment"
+          ref: ${{ github.ref_name }}
 
 # Notes:
 # - This workflow builds and pushes images to GitHub Container Registry (GHCR) under
