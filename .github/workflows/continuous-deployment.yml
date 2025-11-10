@@ -66,8 +66,8 @@ jobs:
             echo "${{ env.DOCKERHUB_TOKEN }}" | sudo docker login docker.io -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin
 
             echo "Navigating to deployment directory..."
-            mkdir -p ~/whoknows
-            cd ~/whoknows
+            mkdir -p ~/whoknows_deployment
+            cd ~/whoknows_deployment
 
             echo "Stopping older containers (if any)"
             sudo docker compose -f docker-compose.prod.yml down || true
