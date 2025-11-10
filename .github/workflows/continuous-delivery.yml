@@ -1,0 +1,76 @@
+name: Continuous Delivery
+
+on:
+  push:
+     branches: [ main, 'ci/docker_workflow' ]
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # For Docker Hub pushes, set these repository secrets in GitHub:
+  # DOCKERHUB_USERNAME -> your Docker Hub username or org
+  # DOCKERHUB_TOKEN -> a Docker Hub access token (recommended)
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push App Image
+        env:
+          IMAGE: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/whoknows_variations
+        run: |
+          # Build the app using the repository Dockerfile and push latest + sha tags
+          docker buildx build \
+            --file ./Dockerfile \
+            --tag ${IMAGE}:latest \
+            --tag ${IMAGE}:${{ github.sha }} \
+            --platform linux/amd64 \
+            --cache-from=type=registry,ref=${IMAGE}:latest \
+            --cache-to=type=registry,ref=${IMAGE}:latest,mode=max \
+            --push .
+
+      - name: Optionally Build and Push Nginx Image
+        env:
+          NGINX_IMAGE: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/nginx
+        run: |
+          # If you have a Dockerfile for nginx at ./nginx/Dockerfile this will build and push it.
+          if [ -f ./nginx/Dockerfile ]; then
+            docker buildx build \
+              --file ./nginx/Dockerfile \
+              --tag ${NGINX_IMAGE}:latest \
+              --platform linux/amd64 \
+              --push ./nginx
+          else
+            echo "No ./nginx/Dockerfile found -- skipping nginx image build"
+          fi
+
+      - name: Images pushed
+        run: |
+          echo "App image: ghcr.io/${{ github.repository_owner }}/whoknows_variations:latest"
+          echo "(Optional) Nginx image: ghcr.io/${{ github.repository_owner }}/nginx:latest"
+
+# Notes:
+# - This workflow builds and pushes images to GitHub Container Registry (GHCR) under
+#   ghcr.io/<org-or-user>/<repo-name>. It uses the repository owner automatically.
+# - Make sure the repository's visibility and GHCR permissions allow package write.
+# - If you prefer a different tag scheme or registry, update the IMAGE/NGINX_IMAGE env values.
