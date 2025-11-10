@@ -4,7 +4,9 @@ on:
   workflow_run:
     workflows: ["Continuous Delivery"]
     types: [completed]
-    branches: [main]
+    branches:
+      - main
+      - ci/docker_workflow
 
   # Enable manual triggers for testing
   workflow_dispatch:
@@ -27,6 +29,8 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Only deploy when the delivery workflow succeeded and originated from main or the test branch
+    if: ${{ (github.event.workflow_run.conclusion == 'success') && (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'ci/docker_workflow') }}
 
     steps:
       - name: Checkout repository
