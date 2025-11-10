@@ -2,9 +2,12 @@ name: Continuous Deployment
 
 on:
   workflow_run:
-    workflows: [ Continuous Delivery ]
-    types:
-      - completed
+    workflows: ["Continuous Delivery"]
+    types: [completed]
+    branches: [main]
+
+  # Enable manual triggers for testing
+  workflow_dispatch:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
