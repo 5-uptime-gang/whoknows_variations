@@ -1,0 +1,107 @@
+.search-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+.search-field {
+  width: 50%;
+  padding: 0.5rem 0;
+  border: none;
+  border-bottom: 2px solid #a78bfa;
+  background: transparent;
+  font-size: 1.2rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-field:focus {
+  border-bottom-color: #7c3aed;
+  box-shadow: 0 2px 0 0 #c4b5fd;
+}
+
+#search-button {
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #7c3aed;
+  color: #fff;
+  font-family: "Orbitron", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+#search-button:hover {
+  background: #6d28d9;
+  transform: translateY(-2px);
+}
+
+#search-button:active {
+  background: #5b21b6;
+  transform: translateY(0);
+}
+
+/* Search results container */
+#results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 80vw;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Each result card */
+#results > div {
+  background: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#results > div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Title link */
+#results h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+#results .search-result-title {
+  color: #5a3d9a;
+  text-decoration: none;
+}
+
+#results .search-result-title:hover {
+  text-decoration: underline;
+}
+
+/* Content snippet */
+#results .search-result-description {
+  margin: 0.25rem 0 0.75rem 0;
+  font-size: 1rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+/* Metadata (language + last updated) */
+#results p {
+  margin: 0.25rem 0;
+  font-size: 0.7rem;
+  color: #666;
+}

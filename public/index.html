@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/public/images/favicon.png">
+    <link rel="stylesheet" href="/public/css/styles.css" />
+    <link rel="stylesheet" href="/public/css/index.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>¿Who Knows?</title>
+  </head>
+
+  <body>
+    <div class="navigation">
+      <nav>
+        <h3><a id="nav-logo" href="/">¿Who Knows?</a></h3>
+        <div class="navigation-links">
+          <a id="nav-weather" href="/weather">Weather</a>
+          <a id="nav-logout" href="/api/logout">Log out</a>
+          <a id="nav-register" href="/register">Register</a>
+          <a id="nav-login" href="/login">Log in</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="search-container">
+      <h1>¿Who Knows?</h1>
+      <input
+        id="search-input"
+        type="text"
+        class="search-field"
+        placeholder="search..."
+      />
+      <button id="search-button">Search</button>
+    </div>
+
+    <div id="results">
+      <!-- Search results will be displayed here -->
+    </div>
+
+    <footer class="footer">
+      <span>¿Who Knows? © 2009</span>
+      <a href="/about">about</a>
+    </footer>
+  </body>
+  <script src="/public/js/navbar.js"></script>
+  <script src="/public/js/index.js"></script>
+</html>

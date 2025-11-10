@@ -1,0 +1,23 @@
+FROM golang:1.25
+
+WORKDIR /usr/src/app
+
+# Install Air for live reload
+RUN go install github.com/air-verse/air@latest
+
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy all source
+COPY . .
+
+# Let Docker handle these folders as volumes
+VOLUME ["/usr/src/app/data", "/usr/src/app/.cache"]
+
+# Go cache paths
+ENV GOCACHE=/usr/src/app/.cache \
+    GOMODCACHE=/go/pkg/mod
+
+EXPOSE 8080
+CMD ["air", "-c", ".air.toml"]
