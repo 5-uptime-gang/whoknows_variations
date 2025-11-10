@@ -67,14 +67,20 @@ jobs:
           echo "App image: ghcr.io/${{ github.repository_owner }}/whoknows_variations:latest"
           echo "(Optional) Nginx image: ghcr.io/${{ github.repository_owner }}/nginx:latest"
 
-      - name: Trigger Continuous Deployment workflow
+      - name: Trigger Continuous Deployment workflow (via REST API)
         if: ${{ success() }}
-        uses: peter-evans/workflow-dispatch@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          workflow: "Continuous Deployment"
-          ref: ${{ github.ref_name }}
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref_name }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Dispatching Continuous Deployment workflow for ref $REF in $REPO"
+          curl -s -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/actions/workflows/continuous-deployment.yml/dispatches" \
+            -d "{\"ref\":\"$REF\"}" \
+            || (echo "Dispatch call failed"; exit 1)
 
 # Notes:
 # - This workflow builds and pushes images to GitHub Container Registry (GHCR) under
