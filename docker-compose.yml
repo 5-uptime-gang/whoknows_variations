@@ -26,6 +26,9 @@ services:
     networks: 
       - appnet
 
+volume: 
+  appdata:
+  
 
 networks:
   appnet:
