@@ -1,7 +1,6 @@
 services:
   whoknows_variations:
-    image: whoknows_variations
-    build: .
+    image: bikstok/whoknows_variations:latest
     expose:
       - "8080"
     restart: unless-stopped # genstarter container automatisk ved crash
