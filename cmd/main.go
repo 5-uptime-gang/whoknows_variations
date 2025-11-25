@@ -322,7 +322,7 @@ func apiLogout(c *gin.Context) {
 func apiSession(c *gin.Context) {
 	_, err := c.Cookie("user_id")
 	if err != nil {
-		log.Printf("[SESSION] Error getting user_id cookie")
+		log.Printf("[SESSION] Missing user_id cookie")
 		code := 401
 		msg := "not logged in"
 		c.JSON(http.StatusOK, AuthResponse{&code, &msg})

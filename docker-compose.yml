@@ -1,7 +1,6 @@
 services:
   whoknows_variations:
-    image: whoknows_variations
-    build: .
+    image: bikstok/whoknows_variations:latest
     expose:
       - "8080"
     restart: unless-stopped # genstarter container automatisk ved crash
@@ -16,18 +15,20 @@ services:
     image: nginx:latest
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/conf-prod:/etc/nginx/conf.d:ro
-      - ./nginx/certs:/etc/letsencrypt
-      - ./nginx/www:/var/www/certbot
+      - /etc/letsencrypt/live/femprocentoppetid.dk:/etc/letsencrypt/live/femprocentoppetid.dk
+      - /etc/letsencrypt/archive/femprocentoppetid.dk:/etc/letsencrypt/archive/femprocentoppetid.dk
     depends_on: # Sørger for at nginx først kører efter vores GO server
       - whoknows_variations
     restart: unless-stopped
     networks: 
       - appnet
 
-volumes:
+volumes: 
   appdata:
+
 
 networks:
   appnet:
