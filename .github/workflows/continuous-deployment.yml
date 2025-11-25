@@ -69,6 +69,12 @@ jobs:
 
             echo "Navigating to deployment directory..."
             mkdir -p ~/whoknows_deployment
+            
+            echo "Stopping existing containers... with old docker files"
+            cd ~/whoknows
+
+            sudo docker-compose -f docker-compose.yml down --remove-orphans || true
+
             cd ~/whoknows_deployment
 
             echo "Pulling latest Docker images..."
