@@ -70,13 +70,13 @@ jobs:
             cd ~/whoknows_deployment
 
             echo "Pulling latest Docker images..."
-            sudo -E docker compose -f docker-compose.prod.yml pull
+            sudo -E docker-compose -f docker-compose.prod.yml pull
 
             echo "Stopping older containers (if any)"
-            sudo docker compose -f docker-compose.prod.yml down || true
+            sudo docker-compose -f docker-compose.prod.yml down || true
 
             echo "Starting containers..."
-            sudo -E docker compose -f docker-compose.prod.yml up -d
+            sudo -E docker-compose -f docker-compose.prod.yml up -d
 
             echo "Deployment complete."
 
