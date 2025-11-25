@@ -2,7 +2,7 @@ name: Continuous Delivery
 
 on:
   push:
-     branches: [ main, 'ci/docker_workflow' ]
+     branches: [ main ]
   workflow_dispatch:
 
 env:
