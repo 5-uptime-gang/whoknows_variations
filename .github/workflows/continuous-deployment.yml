@@ -5,13 +5,12 @@ on:
     workflows: [ Continuous Delivery ]
     types:
       - completed
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # Docker Hub credentials (set these in repo secrets)
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  # VM / SSH secrets (set these in repo secrets)
   VM_HOST: ${{ secrets.VM_HOST }}
   VM_USERNAME: ${{ secrets.VM_USERNAME }}
   VM_KEY: ${{ secrets.VM_KEY }}
@@ -31,29 +30,21 @@ jobs:
 
       - name: Prepare production compose file
         run: |
-          # We will create a docker-compose.prod.yml from your docker-compose.yml
-          # Replace the app image and remove local build instructions so the server pulls the image.
           cp docker-compose.yml docker-compose.prod.yml
-
-          # Replace any image reference for the app service (whoknows_variations) with the Docker Hub image
           sed -i "s|image: whoknows_variations|image: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/whoknows_variations:latest|g" docker-compose.prod.yml
-
-          # If the compose has a local build key, remove it so server doesn't try to build
           sed -i '/build: *\./d' docker-compose.prod.yml
-
           echo "Created docker-compose.prod.yml with Docker Hub image references"
 
-      - name: Copy docker-compose.prod.yml to server
+      - name: Prepare SSH key
         run: |
-          echo "Preparing SSH key..."
           echo "${{ env.VM_KEY }}" > key.pem
           chmod 600 key.pem
 
+      - name: Copy docker-compose.prod.yml to server
+        run: |
           mkdir -p ~/whoknows_deployment
-
-          echo "Copying docker-compose.prod.yml to VM..."
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/docker-compose.prod.yml
-          echo "File copied successfully."
+          echo "docker-compose.prod.yml copied to VM"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -64,23 +55,27 @@ jobs:
           port: 22
           script: |
             set -e
+
             echo "Logging into Docker Hub on remote host..."
             echo "${{ env.DOCKERHUB_TOKEN }}" | sudo docker login docker.io -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin
 
             echo "Navigating to deployment directory..."
             mkdir -p ~/whoknows_deployment
-            
-            echo "Stopping existing containers... with old docker files"
-            cd ~/whoknows
-
-            sudo docker-compose -f docker-compose.yml down --remove-orphans || true
-
             cd ~/whoknows_deployment
+
+            # Check if nginx folder exists, copy if not
+            if [ ! -d "nginx" ]; then
+              echo "nginx folder not found. Copying from GitHub repo..."
+              scp -r -i key.pem -o StrictHostKeyChecking=no ${{ github.workspace }}/nginx ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/nginx
+              echo "nginx folder copied."
+            else
+              echo "nginx folder exists, skipping copy."
+            fi
 
             echo "Pulling latest Docker images..."
             sudo -E docker-compose -f docker-compose.prod.yml pull
 
-            echo "Stopping older containers (if any)"
+            echo "Stopping older containers (if any)..."
             sudo docker-compose -f docker-compose.prod.yml down --remove-orphans || true
 
             echo "Starting containers..."
