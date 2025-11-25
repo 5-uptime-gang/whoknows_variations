@@ -7,9 +7,6 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # For Docker Hub pushes, set these repository secrets in GitHub:
-  # DOCKERHUB_USERNAME -> your Docker Hub username or org
-  # DOCKERHUB_TOKEN -> a Docker Hub access token (recommended)
 
 permissions:
   contents: read
@@ -50,9 +47,3 @@ jobs:
       - name: Images pushed
         run: |
           echo "App image: ghcr.io/${{ github.repository_owner }}/whoknows_variations:latest"
-
-# Notes:
-# - This workflow builds and pushes images to GitHub Container Registry (GHCR) under
-#   ghcr.io/<org-or-user>/<repo-name>. It uses the repository owner automatically.
-# - Make sure the repository's visibility and GHCR permissions allow package write.
-# - If you prefer a different tag scheme or registry, update the IMAGE/NGINX_IMAGE env values.
