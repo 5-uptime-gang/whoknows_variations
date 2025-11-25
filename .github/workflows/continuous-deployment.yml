@@ -81,17 +81,9 @@ jobs:
             sudo -E docker-compose -f docker-compose.prod.yml pull
 
             echo "Stopping older containers (if any)"
-            sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml down --remove-orphans || true
+            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans || true
 
             echo "Starting containers..."
             sudo -E docker-compose -f docker-compose.prod.yml up -d
 
             echo "Deployment complete."
-
-# Notes:
-# - This workflow listens for a completed run of the "Continuous Delivery" workflow.
-# - It prepares a deploy-ready compose file by replacing the app image with the Docker Hub image
-#   built by the delivery workflow, copies it to the VM, logs into Docker Hub on the VM, pulls
-#   images and starts the stack.
-# - Required repository secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, VM_HOST, VM_USERNAME, VM_KEY.
-# - If you prefer to keep docker-compose.prod.yml in the repo, remove the prepare/copy steps and adjust paths.
