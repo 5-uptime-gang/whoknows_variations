@@ -49,8 +49,10 @@ jobs:
           echo "${{ env.VM_KEY }}" > key.pem
           chmod 600 key.pem
 
+          mkdir -p ~/whoknows_deployment
+
           echo "Copying docker-compose.prod.yml to VM..."
-          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows/docker-compose.prod.yml
+          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/docker-compose.prod.yml
           echo "File copied successfully."
 
       - name: Deploy via SSH
