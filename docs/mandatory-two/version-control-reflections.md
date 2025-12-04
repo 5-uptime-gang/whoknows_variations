@@ -1,0 +1,12 @@
+# Refleksion over vores brug af version control.
+
+I dette projekt har vi brugt Git/GitHub som versionsstyring. Vores brug har været basal, med fokus på at kunne arbejde på det samme projekt som resten af gruppen. Det typiske workflow har været: oprettelse af en feature-branch, udvikling af featuren, kontrol af koden via kodeanalyse og linter, og til sidst merge til main-branch. Denne proces har fungeret godt og skabt værdi for os. Git har fungeret som et værktøj, der har faciliteret det at være DevOps, eller i hvert fald hjulpet os tættere på at være DevOps.
+Der er mange funktioner i Git, som vi ikke har udnyttet. Vores brug har været grundlæggende og forholdsvis enkel. På mange måder har dette projekt styrket vores forståelse af versionsstyring, både som studerende og som udviklere generelt. Det er første gang, vi over en længere periode har arbejdet med versionsstyring på en måde, der realistisk emulerer arbejdet med et rigtigt projekt. Måske er vi først nu klar til at eksperimentere med alternative måder at bruge versionsstyring på, fordi den metode, vi har anvendt indtil nu, er indarbejdet og kan bruges som reference.
+
+Generelt har vi været dårlige til at skrive commit-beskeder - de har været korte, upræcise og ofte mangelfulde. Vi burde fra starten have fastlagt klare retningslinjer for, hvordan en commit-besked skal se ud, og hvad der forventes af den. Samtidig har vi måske ikke været i stand til at opstille sådanne krav i starten af projektet, da fokus var på mange andre ting, og det er først nu i eftertid, at alle de væsentlige pointer træder frem.
+
+Vi kunne måske have håndteret det med en squash-and-merge-tilgang.
+Det er en git-feature, der kunne have været brugbar under projektet, da den samler alle commits i en feature branch til ét enkelt commit ved merge.
+Det gør, at alle de små, rodede commits, man laver under udvikling (med beskeder som “small fix”, “removed this again”, “trying again”), bliver renset fra historikken.
+Dette havde især været relevant i arbejdet med vores GitHub Workflows. Her lavede vi mange små commits for at teste funktionaliteten, da det ikke var muligt at teste lokalt, om workflowet deployede korrekt. Ét samlet commit med den færdige feature giver langt større værdi for andre udviklere at læse, end en lang liste af små rettelser.
+Ulempen med Squash and Merge, er dog at man skal læse store commits og det gider de fleste ikke. Det er svært at holde overblik og man mister tankeprocessen bag koden.
