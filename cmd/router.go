@@ -6,6 +6,8 @@ func newRouter() *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery(), loggingMiddleware())
 
+	router.GET("/metrics", gin.WrapF(metricsHandler))
+
 	api := router.Group("/api")
 	{
 		api.GET("/weather", apiWeather)
