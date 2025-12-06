@@ -3,10 +3,11 @@ module WHOKNOWS_VARIATIONS
 go 1.23.0
 
 require (
-	github.com/gin-gonic/gin v1.10.1
-	github.com/stretchr/testify v1.9.0
-	golang.org/x/crypto v0.35.0
-	modernc.org/sqlite v1.38.2
+        github.com/gin-gonic/gin v1.10.1
+        github.com/prometheus/client_golang v1.19.1
+        github.com/stretchr/testify v1.9.0
+        golang.org/x/crypto v0.35.0
+        modernc.org/sqlite v1.38.2
 )
 
 require (
