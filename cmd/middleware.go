@@ -19,8 +19,10 @@ func loggingMiddleware() gin.HandlerFunc {
 			path = c.Request.URL.Path
 		}
 
-		labels := prometheusLabels{method: c.Request.Method, path: path, status: fmt.Sprintf("%d", status)}
-		observeRequest(duration, labels)
+		labels := []string{c.Request.Method, path, fmt.Sprintf("%d", status)}
+		requestCounter.WithLabelValues(labels...).Inc()
+		requestDuration.WithLabelValues(labels...).Observe(duration.Seconds())
+
 		log.Printf("[REQ] %s %s -> %d (%v)", c.Request.Method, path, status, duration)
 	}
 }
