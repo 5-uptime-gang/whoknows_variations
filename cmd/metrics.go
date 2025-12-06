@@ -20,7 +20,7 @@ var (
 			Name:    "http_request_duration_seconds",
 			Help:    "Duration of HTTP requests.",
 			Buckets: prometheus.DefBuckets,
-		},
+		},	
 		[]string{"method", "path", "status"},
 	)
 )
