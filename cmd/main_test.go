@@ -40,17 +40,7 @@ func init() {
 
 func setupRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	api := router.Group("/api")
-	{
-		api.GET("/weather", apiWeather)
-		api.GET("/search", apiSearch)
-		api.POST("/login", apiLogin)
-		api.POST("/register", apiRegister)
-		api.GET("/logout", apiLogout)
-		api.GET("/session", apiSession)
-	}
-	return router
+	return newRouter()
 }
 
 func decode[T any](t *testing.T, body []byte) T {
@@ -152,39 +142,38 @@ func TestLoginWrongPassword(t *testing.T) {
 }
 
 func TestApiLoginSuccess(t *testing.T) {
-    // ensure global db is non-nil to prevent nil deref
-    db, _ = sql.Open("sqlite", ":memory:")
+	// ensure global db is non-nil to prevent nil deref
+	db, _ = sql.Open("sqlite", ":memory:")
 
-    // create bcrypt hash for the expected password
-    hash, _ := bcrypt.GenerateFromPassword([]byte("goodpw"), bcrypt.DefaultCost) //NOSONAR
+	// create bcrypt hash for the expected password
+	hash, _ := bcrypt.GenerateFromPassword([]byte("goodpw"), bcrypt.DefaultCost) //NOSONAR
 
-    // mock database query
-    mockGetUserByUsernameQuery = func(_ *sql.DB, u string) (int, string, string, string, error) {
-        return 1, "u", "e@example.com", string(hash), nil
-    }
-    GetUserByUsernameQuery = func(db *sql.DB, u string) (int, string, string, string, error) {
-        return mockGetUserByUsernameQuery(db, u)
-    }
+	// mock database query
+	mockGetUserByUsernameQuery = func(_ *sql.DB, u string) (int, string, string, string, error) {
+		return 1, "u", "e@example.com", string(hash), nil
+	}
+	GetUserByUsernameQuery = func(db *sql.DB, u string) (int, string, string, string, error) {
+		return mockGetUserByUsernameQuery(db, u)
+	}
 
-    router := setupRouter()
-    body := `{"username":"u","password":"goodpw"}`
-    w := httptest.NewRecorder()
-    req, _ := http.NewRequest("POST", "/api/login", bytes.NewBufferString(body))
-    req.Header.Set("Content-Type", "application/json")
+	router := setupRouter()
+	body := `{"username":"u","password":"goodpw"}`
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/login", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
 
-    router.ServeHTTP(w, req)
+	router.ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusOK, w.Code, "should return 200 OK")
+	assert.Equal(t, http.StatusOK, w.Code, "should return 200 OK")
 
-    resp := decode[AuthResponse](t, w.Body.Bytes())
-    if assert.NotNil(t, resp.Message, "response message should not be nil") {
-        assert.Equal(t, "login successful", *resp.Message)
-    }
-    if assert.NotNil(t, resp.StatusCode, "status code should not be nil") {
-        assert.Equal(t, 200, *resp.StatusCode)
-    }
+	resp := decode[AuthResponse](t, w.Body.Bytes())
+	if assert.NotNil(t, resp.Message, "response message should not be nil") {
+		assert.Equal(t, "login successful", *resp.Message)
+	}
+	if assert.NotNil(t, resp.StatusCode, "status code should not be nil") {
+		assert.Equal(t, 200, *resp.StatusCode)
+	}
 }
-
 
 // --- /api/logout ---
 
