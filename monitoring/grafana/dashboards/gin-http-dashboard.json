@@ -130,6 +130,7 @@
         "defaults": {
           "custom": {
             "lineWidth": 2,
+            
             "fillOpacity": 10
           }
         },
