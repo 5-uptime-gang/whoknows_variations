@@ -31,10 +31,7 @@ jobs:
           # A. Opret mappen
           ssh -i key.pem -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p $TARGET_DIR"
 
-          # B. Kopier docker-compose filen
-          scp -i key.pem -o StrictHostKeyChecking=no monitoring/docker-compose.monitoring.yaml $USERNAME@$HOST:$TARGET_DIR/
-
-          # C. Kopier monitoring mappen
+          # B. Kopier monitoring mappen
           scp -i key.pem -o StrictHostKeyChecking=no -r monitoring $USERNAME@$HOST:$TARGET_DIR/
           
           echo "✅ Filer kopieret succesfuldt."
@@ -43,7 +40,7 @@ jobs:
       - name: Restart Grafana and Prometheus
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no $USERNAME@$HOST " \
-            cd $TARGET_DIR && \
+            cd $TARGET_DIR/monitoring && \
             sudo docker-compose -f docker-compose.monitoring.yaml pull && \
             sudo docker-compose -f docker-compose.monitoring.yaml down && \
             sudo docker rm -f prometheus-dashboard || true && \
