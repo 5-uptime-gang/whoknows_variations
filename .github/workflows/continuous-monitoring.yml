@@ -46,6 +46,8 @@ jobs:
             cd $TARGET_DIR && \
             sudo docker-compose -f docker-compose.monitoring.yaml pull && \
             sudo docker-compose -f docker-compose.monitoring.yaml down && \
+            sudo docker rm -f prometheus-dashboard || true && \
+            sudo docker rm -f grafana || true && \
             sudo docker-compose -f docker-compose.monitoring.yaml up -d --remove-orphans \
           "
         shell: bash
