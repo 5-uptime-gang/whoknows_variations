@@ -9,7 +9,9 @@ on:
   workflow_dispatch:
 
 env:
-  # Vi definerer stien på serveren her
+  HOST: ${{ secrets.VM_HOST_MONITORING }}
+  USERNAME: ${{ secrets.VM_USERNAME_MONITORING }}
+  KEY: ${{ secrets.VM_KEY_MONITORING }}
   TARGET_DIR: "~/whoknows_deployment"
 
 jobs:
@@ -19,48 +21,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. Opret den private nøglefil midlertidigt
-      # Dette er nødvendigt, da scp kræver en fysisk fil at pege på
       - name: Setup SSH Key
         run: |
-          echo "${{ secrets.VM_KEY_MONITORING }}" > key.pem
+          echo "${{ env.KEY }}" > key.pem
           chmod 600 key.pem
 
-      # 2. Kopier filer til serveren med standard SCP
       - name: Copy files via SCP
         run: |
-          # Definer bruger og host én gang for at gøre kommandoerne kortere
-          REMOTE_USER=${{ secrets.VM_USERNAME_MONITORING }}
-          REMOTE_HOST=${{ secrets.VM_HOST_MONITORING }}
-          
-          # A. Opret mappen på serveren (hvis den ikke findes)
-          # -o StrictHostKeyChecking=no forhindrer at den spørger "Are you sure?"
-          ssh -i key.pem -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "mkdir -p ${{ env.TARGET_DIR }}"
+          # A. Opret mappen
+          ssh -i key.pem -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p $TARGET_DIR"
 
           # B. Kopier docker-compose filen
-          scp -i key.pem -o StrictHostKeyChecking=no monitoring/docker-compose.monitoring.yaml $REMOTE_USER@$REMOTE_HOST:${{ env.TARGET_DIR }}/
+          scp -i key.pem -o StrictHostKeyChecking=no monitoring/docker-compose.monitoring.yaml $USERNAME@$HOST:$TARGET_DIR/
 
-          # C. Kopier monitoring mappen rekursivt (-r)
-          scp -i key.pem -o StrictHostKeyChecking=no -r monitoring $REMOTE_USER@$REMOTE_HOST:${{ env.TARGET_DIR }}/
+          # C. Kopier monitoring mappen
+          scp -i key.pem -o StrictHostKeyChecking=no -r monitoring $USERNAME@$HOST:$TARGET_DIR/
           
           echo "✅ Filer kopieret succesfuldt."
 
-      # 3. Oprydning (Slet nøglen fra runneren for en sikkerheds skyld)
-      - name: Cleanup Key
-        if: always() # Kør altid dette, selvom trinnet før fejler
-        run: rm -f key.pem
 
-      # ------------------------------------------------------------------
-      # UDKOMMENTERET DEL: Genstart af services
-      # Fjern '#' herunder, når du har bekræftet at kopieringen virker
-      # ------------------------------------------------------------------
-      
-      # - name: Restart Grafana and Prometheus
-      #   run: |
-      #     ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.VM_USERNAME_MONITORING }}@${{ secrets.VM_HOST_MONITORING }} " \
-      #       cd ${{ env.TARGET_DIR }} && \
-      #       sudo docker compose -f docker-compose.monitoring.yaml pull && \
-      #       sudo docker compose -f docker-compose.monitoring.yaml up -d --remove-orphans && \
-      #       sudo docker compose -f docker-compose.monitoring.yaml restart grafana \
-      #     "
-      #   shell: bash
+      - name: Restart Grafana and Prometheus
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no $USERNAME@$HOST " \
+            cd $TARGET_DIR && \
+            sudo docker compose -f docker-compose.monitoring.yaml pull && \
+            sudo docker compose -f docker-compose.monitoring.yaml up -d --remove-orphans && \
+            sudo docker compose -f docker-compose.monitoring.yaml restart grafana \
+          "
+        shell: bash
+
+      - name: Cleanup Key
+        if: always()
+        run: rm -f key.pem
