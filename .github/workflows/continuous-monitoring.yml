@@ -38,7 +38,7 @@ jobs:
           ssh -i key.pem -o StrictHostKeyChecking=no $REMOTE_USER@$REMOTE_HOST "mkdir -p ${{ env.TARGET_DIR }}"
 
           # B. Kopier docker-compose filen
-          scp -i key.pem -o StrictHostKeyChecking=no docker-compose.monitoring.yaml $REMOTE_USER@$REMOTE_HOST:${{ env.TARGET_DIR }}/
+          scp -i key.pem -o StrictHostKeyChecking=no monitoring/docker-compose.monitoring.yaml $REMOTE_USER@$REMOTE_HOST:${{ env.TARGET_DIR }}/
 
           # C. Kopier monitoring mappen rekursivt (-r)
           scp -i key.pem -o StrictHostKeyChecking=no -r monitoring $REMOTE_USER@$REMOTE_HOST:${{ env.TARGET_DIR }}/
