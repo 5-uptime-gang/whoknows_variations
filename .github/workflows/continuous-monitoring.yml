@@ -44,9 +44,9 @@ jobs:
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no $USERNAME@$HOST " \
             cd $TARGET_DIR && \
-            sudo docker compose -f docker-compose.monitoring.yaml pull && \
-            sudo docker compose -f docker-compose.monitoring.yaml up -d --remove-orphans && \
-            sudo docker compose -f docker-compose.monitoring.yaml restart grafana \
+            sudo docker-compose -f docker-compose.monitoring.yaml pull && \
+            sudo docker-compose -f docker-compose.monitoring.yaml up -d --remove-orphans && \
+            sudo docker-compose -f docker-compose.monitoring.yaml restart grafana \
           "
         shell: bash
 
