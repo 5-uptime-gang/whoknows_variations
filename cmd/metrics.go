@@ -23,10 +23,17 @@ var (
 		},	
 		[]string{"method", "path", "status"},
 	)
+	userSignupCounter = prometheus.NewCounterVec(
+        prometheus.CounterOpts{
+            Name: "app_user_signups_total",
+            Help: "Total number of user signup attempts (success/failed).",
+        },
+        []string{"status"},
+    )
 )
 
 func init() {
-	prometheus.MustRegister(requestCounter, requestDuration)
+	prometheus.MustRegister(requestCounter, requestDuration, userSignupCounter)
 }
 
 func metricsHandler() gin.HandlerFunc {

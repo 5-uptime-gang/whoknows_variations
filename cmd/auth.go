@@ -49,27 +49,32 @@ func apiRegister(c *gin.Context) {
 	}
 	if err := c.ShouldBind(&form); err != nil {
 		log.Printf("[REGISTER] Invalid form data: %v", err)
+		userSignupCounter.WithLabelValues("failed").Inc()
 		sendValidationError(c, "body", "invalid form data")
 		return
 	}
 
 	if form.Username == "" {
 		log.Printf("[REGISTER] Missing username")
+		userSignupCounter.WithLabelValues("failed").Inc()
 		sendValidationError(c, "username", "you have to enter a username")
 		return
 	}
 	if form.Email == "" || !regexp.MustCompile(`.+@.+\..+`).MatchString(form.Email) {
 		log.Printf("[REGISTER] Invalid email: %q", form.Email)
+		userSignupCounter.WithLabelValues("failed").Inc()
 		sendValidationError(c, "email", "you have to enter a valid email address")
 		return
 	}
 	if form.Password == "" {
 		log.Printf("[REGISTER] Missing password for username=%q", form.Username)
+		userSignupCounter.WithLabelValues("failed").Inc()
 		sendValidationError(c, "password", "you have to enter a password")
 		return
 	}
 	if form.Password != form.Password2 {
 		log.Printf("[REGISTER] Password mismatch for username=%q", form.Username)
+		userSignupCounter.WithLabelValues("failed").Inc()
 		sendValidationError(c, "password2", "the two passwords do not match")
 		return
 	}
@@ -78,11 +83,13 @@ func apiRegister(c *gin.Context) {
 	userID, err := InsertUserQuery(db, form.Username, form.Email, string(hash))
 	if err != nil {
 		log.Printf("[REGISTER] Database error: %v", err)
+		userSignupCounter.WithLabelValues("failed").Inc()
 		c.JSON(422, HTTPValidationError{Detail: []ValidationError{{Loc: []any{"database", 0}, Msg: "username or email taken", Type: "db_error"}}})
 		return
 	}
 
 	log.Printf("[REGISTER] User registered: %s", form.Username)
+	userSignupCounter.WithLabelValues("success").Inc()
 
 	util.SetAuthCookie(c, int(userID))
 	code := 200

@@ -4,7 +4,7 @@
   "title": "Gin HTTP Metrics Dashboard",
   "timezone": "browser",
   "schemaVersion": 36,
-  "version": 1,
+  "version": 2,
   "refresh": "5s",
   "time": {
     "from": "now-15m",
@@ -59,6 +59,92 @@
         }
       ],
       "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 }
+    },
+    {
+      "type": "row",
+      "title": "User Onboarding Metrics",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }
+    },
+    {
+      "type": "stat",
+      "title": "New Users (Last 24h)",
+      "targets": [
+        {
+          "expr": "sum(increase(app_user_signups_total{status=\"success\"}[24h]))",
+          "legendFormat": "Users"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 15 }
+    },
+    {
+      "type": "gauge",
+      "title": "Signup Success Rate",
+      "targets": [
+        {
+          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[1h])) / sum(rate(app_user_signups_total[1h])) * 100",
+          "legendFormat": "Success Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "green", "value": 80 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 15 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Signups (Success vs Failed)",
+      "targets": [
+        {
+          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[5m]))",
+          "legendFormat": "Success"
+        },
+        {
+          "expr": "sum(rate(app_user_signups_total{status=\"failed\"}[5m]))",
+          "legendFormat": "Failed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+           {
+             "matcher": { "id": "byName", "options": "Failed" },
+             "properties": [ { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } } ]
+           },
+           {
+             "matcher": { "id": "byName", "options": "Success" },
+             "properties": [ { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } } ]
+           }
+        ]
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 15 }
     }
   ]
 }
