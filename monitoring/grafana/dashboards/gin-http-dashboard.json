@@ -79,9 +79,7 @@
           "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              { "color": "blue", "value": null }
-            ]
+            "steps": [{ "color": "blue", "value": null }]
           }
         }
       },
@@ -130,22 +128,60 @@
         "defaults": {
           "custom": {
             "lineWidth": 2,
-            
+
             "fillOpacity": 10
           }
         },
         "overrides": [
-           {
-             "matcher": { "id": "byName", "options": "Failed" },
-             "properties": [ { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } } ]
-           },
-           {
-             "matcher": { "id": "byName", "options": "Success" },
-             "properties": [ { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } } ]
-           }
+          {
+            "matcher": { "id": "byName", "options": "Failed" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "fixedColor": "red", "mode": "fixed" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Success" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "fixedColor": "green", "mode": "fixed" }
+              }
+            ]
+          }
         ]
       },
       "gridPos": { "h": 6, "w": 8, "x": 16, "y": 15 }
+    },
+    {
+      "type": "row",
+      "title": "Browser & Tech (Accessibility)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 }
+    },
+    {
+      "type": "piechart",
+      "title": "Browser Distribution",
+      "targets": [
+        {
+          "expr": "sum(app_browser_usage_total) by (browser)",
+          "legendFormat": "{{browser}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "displayLabels": ["percent"],
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
     }
   ]
 }
