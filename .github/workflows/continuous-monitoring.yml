@@ -46,7 +46,7 @@ jobs:
             cd $TARGET_DIR && \
             sudo docker-compose -f docker-compose.monitoring.yaml pull && \
             sudo docker-compose -f docker-compose.monitoring.yaml down && \
-            sudo docker-compose -f docker-compose.monitoring.yaml up -d --remove-orphans && \
+            sudo docker-compose -f docker-compose.monitoring.yaml up -d --remove-orphans \
           "
         shell: bash
 
