@@ -91,7 +91,6 @@
         "defaults": {
           "custom": {
             "lineWidth": 2,
-
             "fillOpacity": 10
           }
         },
@@ -145,6 +144,39 @@
         }
       },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
+    },
+    {
+      "type": "bargauge",
+      "title": "Top 5 Search Queries (Hits)",
+      "targets": [
+        {
+          "expr": "topk(5, app_search_queries_total)",
+          "legendFormat": "{{query}}"
+        }
+      ],
+      "options": {
+        "displayMode": "lcd",
+        "orientation": "horizontal",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "valueOptions": {
+          "unit": "short",
+          "prefix": "",
+          "suffix": " hits"
+        },
+        "max": 0,
+        "min": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
     },
     {
       "type": "row",
@@ -211,27 +243,6 @@
       },
       "gridPos": { "h": 8, "w": 18, "x": 0, "y": 31 },
       "timeFrom": "7d"
-    },
-    {
-      "type": "table",
-      "title": "Top 5 Search Queries",
-      "targets": [
-        {
-          "expr": "topk(5, sum by (query) (rate(app_search_queries_total[5m])))",
-          "legendFormat": "{{query}}"
-        }
-      ],
-      "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "displayName": "Value",
-            "index": -1,
-            "desc": true
-          }
-        ]
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
     }
   ]
 }
