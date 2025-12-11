@@ -99,7 +99,7 @@
       "description": "New successful registrations per hour (rolling 24h).",
       "targets": [
         {
-          "expr": "increase(app_user_signups_total{status=\\\"success\\\"}[1h])",
+          "expr": "increase(app_user_signups_total{status=\"success\"}[1h])",
           "legendFormat": "New users"
         }
       ],
@@ -117,11 +117,11 @@
       "description": "Signup attempts grouped by outcome (15m buckets).",
       "targets": [
         {
-          "expr": "increase(app_user_signups_total{status=\\\"success\\\"}[15m])",
+          "expr": "increase(app_user_signups_total{status=\"success\"}[15m])",
           "legendFormat": "Success"
         },
         {
-          "expr": "increase(app_user_signups_total{status=\\\"failed\\\"}[15m])",
+          "expr": "increase(app_user_signups_total{status=\"failed\"}[15m])",
           "legendFormat": "Failed"
         }
       ],
@@ -179,7 +179,7 @@
       "description": "Cumulative successful signups.",
       "targets": [
         {
-          "expr": "sum(app_user_signups_total{status=\\\"success\\\"})",
+          "expr": "sum(app_user_signups_total{status=\"success\"})",
           "legendFormat": "Users"
         }
       ],
