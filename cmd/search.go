@@ -27,6 +27,7 @@ func apiSearch(c *gin.Context) {
 
 	safeQ := strings.ReplaceAll(strings.ReplaceAll(q, "\n", "_"), "\r", "_")
 	safeLang := strings.ReplaceAll(strings.ReplaceAll(lang, "\n", "_"), "\r", "_")
+	searchQueryCounter.WithLabelValues(sanitizeLabelValue(q)).Inc()
 
 	log.Printf("[SEARCH] Search successful: q=%q, lang=%q", safeQ, safeLang)
 	c.JSON(http.StatusOK, SearchResponse{Data: results})

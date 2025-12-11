@@ -20,153 +20,193 @@
     {
       "type": "timeseries",
       "title": "Request Rate (req/s)",
+      "description": "Top endpoints by request rate (includes status to spot heavy traffic to missing endpoints).",
       "targets": [
         {
-          "expr": "sum by (method, path) (rate(http_requests_total[1m]))",
-          "legendFormat": "{{method}} {{path}}"
+          "expr": "topk(10, sum by (status, path) (rate(http_requests_total[5m])))",
+          "legendFormat": "{{status}} {{path}}"
         }
       ],
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      }
     },
     {
       "type": "timeseries",
       "title": "Request Duration (avg seconds)",
+      "description": "Average request duration per endpoint (5m window).",
       "targets": [
         {
-          "expr": "sum by (method, path) (rate(http_request_duration_seconds_sum[1m])) / sum by (method, path) (rate(http_request_duration_seconds_count[1m]))",
+          "expr": "sum by (method, path) (rate(http_request_duration_seconds_sum[5m])) / sum by (method, path) (rate(http_request_duration_seconds_count[5m]))",
           "legendFormat": "{{method}} {{path}}"
         }
       ],
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      }
     },
     {
       "type": "bargauge",
       "title": "Requests by Status",
+      "description": "Aggregated request volume by status class over the selected time range.",
       "targets": [
         {
-          "expr": "sum by (status) (rate(http_requests_total[1m]))"
+          "expr": "sum by (status_group) (label_replace(increase(http_requests_total{status=~\"2..\"}[$__range]), \"status_group\", \"2xx Success\", \"status\", \"(.*)\") or label_replace(increase(http_requests_total{status=~\"3..\"}[$__range]), \"status_group\", \"3xx Redirect\", \"status\", \"(.*)\") or label_replace(increase(http_requests_total{status=~\"4..\"}[$__range]), \"status_group\", \"4xx Client Error\", \"status\", \"(.*)\") or label_replace(increase(http_requests_total{status=~\"5..\"}[$__range]), \"status_group\", \"5xx Server Error\", \"status\", \"(.*)\") or label_replace(increase(http_requests_total{status!~\"[2-5]..\"}[$__range]), \"status_group\", \"Other\", \"status\", \"(.*)\"))"
         }
       ],
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 }
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      }
     },
     {
-      "type": "timeseries",
-      "title": "95th Percentile Latency",
+      "type": "bargauge",
+      "title": "Top 404 Request Paths",
+      "description": "Endpoints receiving the most 404s (5m rate) to flag non-existent routes.",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, method, path) (rate(http_request_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{method}} {{path}}"
+          "expr": "topk(5, sum by (path) (rate(http_requests_total{status=\"404\"}[5m])))"
         }
       ],
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 }
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      }
     },
     {
       "type": "row",
       "title": "User Onboarding Metrics",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      }
     },
     {
-      "type": "stat",
+      "type": "timeseries",
       "title": "New Users (Last 24h)",
+      "description": "New successful registrations per hour (rolling 24h).",
       "targets": [
         {
-          "expr": "sum(increase(app_user_signups_total{status=\"success\"}[24h]))",
-          "legendFormat": "Users"
+          "expr": "increase(app_user_signups_total{status=\\\"success\\\"}[1h])",
+          "legendFormat": "New users"
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
-          }
-        }
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 15 }
-    },
-    {
-      "type": "gauge",
-      "title": "Signup Success Rate",
-      "targets": [
-        {
-          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[1h])) / sum(rate(app_user_signups_total[1h])) * 100",
-          "legendFormat": "Success Rate"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "min": 0,
-          "max": 100,
-          "unit": "percent",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 50 },
-              { "color": "green", "value": 80 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 15 }
+      "timeFrom": "24h",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      }
     },
     {
       "type": "timeseries",
       "title": "Signups (Success vs Failed)",
+      "description": "Signup attempts grouped by outcome (15m buckets).",
       "targets": [
         {
-          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[5m]))",
+          "expr": "increase(app_user_signups_total{status=\\\"success\\\"}[15m])",
           "legendFormat": "Success"
         },
         {
-          "expr": "sum(rate(app_user_signups_total{status=\"failed\"}[5m]))",
+          "expr": "increase(app_user_signups_total{status=\\\"failed\\\"}[15m])",
           "legendFormat": "Failed"
         }
       ],
+      "timeFrom": "24h",
       "fieldConfig": {
         "defaults": {
           "custom": {
             "lineWidth": 2,
-
             "fillOpacity": 10
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Failed" },
+            "matcher": {
+              "id": "byName",
+              "options": "Failed"
+            },
             "properties": [
               {
                 "id": "color",
-                "value": { "fixedColor": "red", "mode": "fixed" }
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
               }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Success" },
+            "matcher": {
+              "id": "byName",
+              "options": "Success"
+            },
             "properties": [
               {
                 "id": "color",
-                "value": { "fixedColor": "green", "mode": "fixed" }
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
               }
             ]
           }
         ]
       },
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 15 }
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 15
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total Users (All-Time)",
+      "description": "Cumulative successful signups.",
+      "targets": [
+        {
+          "expr": "sum(app_user_signups_total{status=\\\"success\\\"})",
+          "legendFormat": "Users"
+        }
+      ],
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      }
     },
     {
       "type": "row",
       "title": "Browser & Tech (Accessibility)",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 }
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      }
     },
     {
       "type": "piechart",
       "title": "Browser Distribution",
       "targets": [
         {
-          "expr": "sum(app_browser_usage_total) by (browser)",
-          "legendFormat": "{{browser}}"
+          "expr": "sum(app_browser_usage_total) by (browser, version)",
+          "legendFormat": "{{browser}} {{version}}"
         }
       ],
       "options": {
@@ -175,18 +215,46 @@
           "placement": "right",
           "showLegend": true
         },
-        "displayLabels": ["percent"],
+        "displayLabels": [
+          "percent"
+        ],
         "tooltip": {
           "mode": "single",
           "sort": "none"
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Top 5 Searches",
+      "description": "Most common search queries (last 24h).",
+      "targets": [
+        {
+          "expr": "topk(5, increase(app_search_queries_total[24h]))"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      }
     },
     {
       "type": "row",
       "title": "Traffic Patterns & Capacity Planning",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 }
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      }
     },
     {
       "type": "timeseries",
@@ -246,46 +314,67 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 18, "x": 0, "y": 31 },
+      "gridPos": {
+        "h": 8,
+        "w": 14,
+        "x": 0,
+        "y": 31
+      },
       "timeFrom": "7d"
     },
     {
-      "type": "stat",
-      "title": "All-Time Peak Load",
-      "description": "The highest requests/second recorded in the selected period. Scale your server to handle this number.",
+      "type": "row",
+      "title": "Application Resources",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Usage",
+      "description": "Approximate CPU usage of the app (1m rate * 100).",
       "targets": [
         {
-          "expr": "max_over_time(sum(rate(http_requests_total[1m]))[$__range:1m])",
-          "legendFormat": "Max Req/s"
+          "expr": "rate(process_cpu_seconds_total[1m]) * 100",
+          "legendFormat": "CPU %"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 50
-              },
-              {
-                "color": "red",
-                "value": 100
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds" 
-          }
-        },
-        "overrides": []
+          "unit": "percentunit"
+        }
       },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 31 }
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Usage",
+      "description": "Resident memory in use by the app.",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes",
+          "legendFormat": "RSS"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      }
     }
   ]
 }
