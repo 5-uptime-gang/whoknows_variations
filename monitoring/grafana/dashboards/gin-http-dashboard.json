@@ -50,17 +50,6 @@
       "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 }
     },
     {
-      "type": "timeseries",
-      "title": "95th Percentile Latency",
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum by (le, method, path) (rate(http_request_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{method}} {{path}}"
-        }
-      ],
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 }
-    },
-    {
       "type": "row",
       "title": "User Onboarding Metrics",
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }
@@ -86,41 +75,15 @@
       "gridPos": { "h": 6, "w": 8, "x": 0, "y": 15 }
     },
     {
-      "type": "gauge",
-      "title": "Signup Success Rate",
-      "targets": [
-        {
-          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[1h])) / sum(rate(app_user_signups_total[1h])) * 100",
-          "legendFormat": "Success Rate"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "min": 0,
-          "max": 100,
-          "unit": "percent",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 50 },
-              { "color": "green", "value": 80 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 15 }
-    },
-    {
       "type": "timeseries",
       "title": "Signups (Success vs Failed)",
       "targets": [
         {
-          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[5m]))",
+          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[15m]))",
           "legendFormat": "Success"
         },
         {
-          "expr": "sum(rate(app_user_signups_total{status=\"failed\"}[5m]))",
+          "expr": "sum(rate(app_user_signups_total{status=\"failed\"}[15m]))",
           "legendFormat": "Failed"
         }
       ],
@@ -248,44 +211,6 @@
       },
       "gridPos": { "h": 8, "w": 18, "x": 0, "y": 31 },
       "timeFrom": "7d"
-    },
-    {
-      "type": "stat",
-      "title": "All-Time Peak Load",
-      "description": "The highest requests/second recorded in the selected period. Scale your server to handle this number.",
-      "targets": [
-        {
-          "expr": "max_over_time(sum(rate(http_requests_total[1m]))[$__range:1m])",
-          "legendFormat": "Max Req/s"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 50
-              },
-              {
-                "color": "red",
-                "value": 100
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds" 
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 31 }
     }
   ]
 }
