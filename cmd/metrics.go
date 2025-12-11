@@ -49,10 +49,19 @@ var (
 		},
 		[]string{"query"},
 	)
+
+	searchResultsHistogram = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "app_search_results_per_query",
+			Help:    "Distribution of result counts returned per search query",
+			Buckets: []float64{0, 1, 3, 5, 10, 20, 50, 100, 200, 500},
+		},
+		[]string{"query"},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(requestCounter, requestDuration, userSignupCounter, browserCounter, searchQueryCounter)
+	prometheus.MustRegister(requestCounter, requestDuration, userSignupCounter, browserCounter, searchQueryCounter, searchResultsHistogram)
 }
 
 func metricsHandler() gin.HandlerFunc {

@@ -232,12 +232,56 @@
     },
     {
       "type": "row",
-      "title": "Traffic Patterns & Capacity Planning",
+      "title": "Search Quality & Trends",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 30
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Average Results per Search (Top Queries)",
+      "description": "Average number of results returned per search query over the selected range (top 5).",
+      "targets": [
+        {
+          "expr": "topk(5, sum by (query) (increase(app_search_results_per_query_sum[$__range])) / sum by (query) (increase(app_search_results_per_query_count[$__range])))",
+          "legendFormat": "{{query}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      }
+    },
+    {
+      "type": "bargauge",
+      "title": "Trending Searches (Last 1h)",
+      "description": "Top search queries by volume growth in the last hour.",
+      "targets": [
+        {
+          "expr": "topk(5, increase(app_search_queries_total[1h]))",
+          "legendFormat": "{{query}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      }
+    },
+    {
+      "type": "row",
+      "title": "Traffic Patterns & Capacity Planning",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
       }
     },
     {
@@ -302,7 +346,7 @@
         "h": 8,
         "w": 14,
         "x": 0,
-        "y": 31
+        "y": 40
       },
       "timeFrom": "7d"
     },
@@ -313,7 +357,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 48
       }
     },
     {
@@ -335,7 +379,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 49
       }
     },
     {
@@ -357,7 +401,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 49
       }
     }
   ]

@@ -16,6 +16,7 @@ func apiSearch(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, RequestValidationError{StatusCode: 422, Message: &msg})
 		return
 	}
+
 	lang := c.DefaultQuery("language", "en")
 	results, err := SearchPagesQuery(db, q, lang)
 	if err != nil {
@@ -27,7 +28,9 @@ func apiSearch(c *gin.Context) {
 
 	safeQ := strings.ReplaceAll(strings.ReplaceAll(q, "\n", "_"), "\r", "_")
 	safeLang := strings.ReplaceAll(strings.ReplaceAll(lang, "\n", "_"), "\r", "_")
-	searchQueryCounter.WithLabelValues(sanitizeLabelValue(q)).Inc()
+	sanitizedQuery := sanitizeLabelValue(q)
+	searchQueryCounter.WithLabelValues(sanitizedQuery).Inc()
+	searchResultsHistogram.WithLabelValues(sanitizedQuery).Observe(float64(len(results)))
 
 	log.Printf("[SEARCH] Search successful: q=%q, lang=%q", safeQ, safeLang)
 	c.JSON(http.StatusOK, SearchResponse{Data: results})
