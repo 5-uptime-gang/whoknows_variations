@@ -18,12 +18,12 @@
   },
   "panels": [
     {
-      "type": "timeseries",
-      "title": "Request Rate (req/s)",
-      "description": "Top endpoints by request rate (includes status to spot heavy traffic to missing endpoints).",
+      "type": "bargauge",
+      "title": "Requests (total over range)",
+      "description": "Top endpoints by total requests within the selected time range (status included to surface heavy 404 traffic).",
       "targets": [
         {
-          "expr": "topk(10, sum by (status, path) (rate(http_requests_total[5m])))",
+          "expr": "topk(10, sum by (status, path) (increase(http_requests_total[$__range])))",
           "legendFormat": "{{status}} {{path}}"
         }
       ],
@@ -35,12 +35,12 @@
       }
     },
     {
-      "type": "timeseries",
+      "type": "bargauge",
       "title": "Request Duration (avg seconds)",
-      "description": "Average request duration per endpoint (5m window).",
+      "description": "Average request duration per endpoint over the selected time range.",
       "targets": [
         {
-          "expr": "sum by (method, path) (rate(http_request_duration_seconds_sum[5m])) / sum by (method, path) (rate(http_request_duration_seconds_count[5m]))",
+          "expr": "topk(10, increase(http_request_duration_seconds_sum[$__range]) / increase(http_request_duration_seconds_count[$__range]))",
           "legendFormat": "{{method}} {{path}}"
         }
       ],
@@ -62,24 +62,8 @@
       ],
       "gridPos": {
         "h": 6,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 8
-      }
-    },
-    {
-      "type": "bargauge",
-      "title": "Top 404 Request Paths",
-      "description": "Endpoints receiving the most 404s (5m rate) to flag non-existent routes.",
-      "targets": [
-        {
-          "expr": "topk(5, sum by (path) (rate(http_requests_total{status=\"404\"}[5m])))"
-        }
-      ],
-      "gridPos": {
-        "h": 6,
-        "w": 12,
-        "x": 12,
         "y": 8
       }
     },
