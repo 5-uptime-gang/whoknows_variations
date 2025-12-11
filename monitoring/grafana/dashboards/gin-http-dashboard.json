@@ -79,11 +79,11 @@
       "title": "Signups (Success vs Failed)",
       "targets": [
         {
-          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[15m]))",
+          "expr": "sum(rate(app_user_signups_total{status=\"success\"}[24h]))",
           "legendFormat": "Success"
         },
         {
-          "expr": "sum(rate(app_user_signups_total{status=\"failed\"}[15m]))",
+          "expr": "sum(rate(app_user_signups_total{status=\"failed\"}[24h]))",
           "legendFormat": "Failed"
         }
       ],
@@ -211,6 +211,27 @@
       },
       "gridPos": { "h": 8, "w": 18, "x": 0, "y": 31 },
       "timeFrom": "7d"
+    },
+    {
+      "type": "table",
+      "title": "Top 5 Search Queries",
+      "targets": [
+        {
+          "expr": "topk(5, sum by (query) (rate(app_search_queries_total[5m])))",
+          "legendFormat": "{{query}}"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Value",
+            "index": -1,
+            "desc": true
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
     }
   ]
 }

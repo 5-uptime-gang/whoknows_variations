@@ -3,7 +3,6 @@ package main
 import (
 	"strings"
 
-
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -23,16 +22,16 @@ var (
 			Name:    "http_request_duration_seconds",
 			Help:    "Duration of HTTP requests.",
 			Buckets: prometheus.DefBuckets,
-		},	
+		},
 		[]string{"method", "path", "status"},
 	)
 	userSignupCounter = prometheus.NewCounterVec(
-        prometheus.CounterOpts{
-            Name: "app_user_signups_total",
-            Help: "Total number of user signup attempts (success/failed).",
-        },
-        []string{"status"},
-    )
+		prometheus.CounterOpts{
+			Name: "app_user_signups_total",
+			Help: "Total number of user signup attempts (success/failed).",
+		},
+		[]string{"status"},
+	)
 	browserCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "app_browser_usage_total",
@@ -40,10 +39,17 @@ var (
 		},
 		[]string{"browser"},
 	)
+	searchQueryCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "app_search_queries_total",
+			Help: "Total count of successful search queries by term.",
+		},
+		[]string{"query"},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(requestCounter, requestDuration, userSignupCounter, browserCounter)
+	prometheus.MustRegister(requestCounter, requestDuration, userSignupCounter, browserCounter, searchQueryCounter)
 }
 
 func metricsHandler() gin.HandlerFunc {
@@ -54,9 +60,9 @@ func BrowserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userAgent := c.GetHeader("User-Agent")
 		browser := parseUserAgent(userAgent)
-		
+
 		browserCounter.WithLabelValues(browser).Inc()
-		
+
 		c.Next()
 	}
 }
@@ -97,7 +103,6 @@ func parseUserAgent(ua string) string {
 	if strings.Contains(ua, "firefox") {
 		return "Firefox"
 	}
-
 
 	if strings.Contains(ua, "msie") || strings.Contains(ua, "trident") {
 		return "Internet Explorer"

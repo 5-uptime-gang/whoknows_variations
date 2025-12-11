@@ -25,6 +25,12 @@ func apiSearch(c *gin.Context) {
 		return
 	}
 
+	normalizedQuery := strings.ToLower(strings.TrimSpace(q))
+
+	searchQueryCounter.WithLabelValues(normalizedQuery).Inc()
+
+	
+
 	safeQ := strings.ReplaceAll(strings.ReplaceAll(q, "\n", "_"), "\r", "_")
 	safeLang := strings.ReplaceAll(strings.ReplaceAll(lang, "\n", "_"), "\r", "_")
 
