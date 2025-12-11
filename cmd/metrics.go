@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,7 +38,7 @@ var (
 			Name: "app_browser_usage_total",
 			Help: "Count of HTTP requests grouped by browser family",
 		},
-		[]string{"browser"},
+		[]string{"browser", "version"},
 	)
 	searchQueryCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -46,6 +47,7 @@ var (
 		},
 		[]string{"query"},
 	)
+	versionRegex = regexp.MustCompile(`([0-9.]+[\-0-9.]*)`)
 )
 
 func init() {
@@ -58,61 +60,90 @@ func metricsHandler() gin.HandlerFunc {
 
 func BrowserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userAgent := c.GetHeader("User-Agent")
-		browser := parseUserAgent(userAgent)
+		if c.Request.URL.Path == "/metrics" {
+			c.Next()
+			return
+		}
 
-		browserCounter.WithLabelValues(browser).Inc()
+		userAgent := c.GetHeader("User-Agent")
+		browser, version := parseUserAgent(userAgent)
+
+		browserCounter.WithLabelValues(browser, version).Inc()
 
 		c.Next()
 	}
 }
 
-func parseUserAgent(ua string) string {
+func parseUserAgent(ua string) (browser string, version string) {
 	ua = strings.ToLower(ua)
+	version = "N/A"
 
-	// 1. Specifikke browsere (Tjekkes først, da de ofte indeholder "Chrome" eller "Safari")
-	if strings.Contains(ua, "samsungbrowser") {
-		return "Samsung Internet"
+	getSpecificVersion := func(key string) string {
+		startIndex := strings.Index(ua, key)
+		if startIndex == -1 {
+			return "N/A"
+		}
+		
+		startIndex += len(key)
+		
+		endIndex := startIndex
+		for endIndex < len(ua) && (ua[endIndex] >= '0' && ua[endIndex] <= '9' || ua[endIndex] == '.') {
+			endIndex++
+		}
+		
+		v := strings.TrimSpace(ua[startIndex:endIndex])
+		
+		if match := versionRegex.FindString(v); match != "" {
+			return match
+		}
+		return v
 	}
-	if strings.Contains(ua, "vivaldi") {
-		return "Vivaldi"
-	}
-	if strings.Contains(ua, "duckduckgo") {
-		return "DuckDuckGo"
-	}
-	if strings.Contains(ua, "opr") || strings.Contains(ua, "opera") {
-		return "Opera"
-	}
-	if strings.Contains(ua, "yabrowser") {
-		return "Yandex"
-	}
-	if strings.Contains(ua, "brave") {
-		return "Brave"
-	}
-
-	if strings.Contains(ua, "edg/") || strings.Contains(ua, "edge") {
-		return "Edge"
-	}
-
-	if strings.Contains(ua, "chrome") {
-		return "Chrome"
-	}
-	if strings.Contains(ua, "safari") {
-		return "Safari"
-	}
-	if strings.Contains(ua, "firefox") {
-		return "Firefox"
-	}
-
-	if strings.Contains(ua, "msie") || strings.Contains(ua, "trident") {
-		return "Internet Explorer"
-	}
+	
 	if strings.Contains(ua, "bot") || strings.Contains(ua, "crawler") || strings.Contains(ua, "spider") || strings.Contains(ua, "slurp") {
-		return "Bot"
+		return "Bot", "N/A"
 	}
 	if strings.Contains(ua, "curl") || strings.Contains(ua, "wget") || strings.Contains(ua, "postman") {
-		return "Dev Tools"
+		return "Dev Tools", "N/A"
 	}
 
-	return "Other"
+	if strings.Contains(ua, "edg/") {
+		return "Edge", getSpecificVersion("edg/")
+	}
+	if strings.Contains(ua, "opr/") || strings.Contains(ua, "opera") {
+		return "Opera", getSpecificVersion("opr/")
+	}
+	if strings.Contains(ua, "samsungbrowser") {
+		return "Samsung Internet", getSpecificVersion("samsungbrowser/")
+	}
+	if strings.Contains(ua, "vivaldi") {
+		return "Vivaldi", getSpecificVersion("vivaldi/")
+	}
+	
+	if strings.Contains(ua, "chrome") {
+		return "Chrome", getSpecificVersion("chrome/")
+	}
+	
+	if strings.Contains(ua, "firefox") {
+		return "Firefox", getSpecificVersion("firefox/")
+	}
+	
+	if strings.Contains(ua, "safari") && !strings.Contains(ua, "android") {
+		if v := getSpecificVersion("version/"); v != "N/A" {
+			return "Safari (Desktop)", v
+		}
+		return "Safari (Desktop)", getSpecificVersion("safari/")
+	}
+	
+	if strings.Contains(ua, "iphone") || strings.Contains(ua, "ipad") {
+		return "Safari on iOS", getSpecificVersion("version/")
+	}
+
+	if strings.Contains(ua, "android") {
+		return "Android Browser", getSpecificVersion("android/")
+	}
+	if strings.Contains(ua, "msie") || strings.Contains(ua, "trident") {
+		return "Internet Explorer", getSpecificVersion("msie ")
+	}
+
+	return "Other", "N/A"
 }
