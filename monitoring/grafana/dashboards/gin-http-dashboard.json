@@ -253,10 +253,7 @@
         "x": 0,
         "y": 100
       },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
+      "datasource": null,
       "targets": [
         {
           "expr": "app_users_current_total",
