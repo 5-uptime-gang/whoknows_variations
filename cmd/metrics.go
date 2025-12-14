@@ -3,6 +3,9 @@ package main
 import (
 	"strings"
 	"regexp"
+	"time"
+	"log"
+	"database/sql"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -48,10 +51,17 @@ var (
 		[]string{"query"},
 	)
 	versionRegex = regexp.MustCompile(`([0-9.]+[\-0-9.]*)`)
+
+	userTotalGauge = prometheus.NewGauge(
+        prometheus.GaugeOpts{
+            Name: "app_users_current_total",
+            Help: "Det nuværende antal brugere i databasen.",
+        },
+    )
 )
 
 func init() {
-	prometheus.MustRegister(requestCounter, requestDuration, userSignupCounter, browserCounter, searchQueryCounter)
+	prometheus.MustRegister(requestCounter, requestDuration, userSignupCounter, browserCounter, searchQueryCounter, userTotalGauge)
 }
 
 func metricsHandler() gin.HandlerFunc {
@@ -146,4 +156,19 @@ func parseUserAgent(ua string) (browser string, version string) {
 	}
 
 	return "Other", "N/A"
+}
+
+func monitorUserCount(db *sql.DB) {
+    ticker := time.NewTicker(15 * time.Second)
+    defer ticker.Stop()
+
+    for range ticker.C {
+
+        count, err := GetUserCountQuery(db) 
+        if err != nil {
+            log.Printf("Fejl ved tælling af brugere: %v", err)
+            continue
+        }
+        userTotalGauge.Set(count)
+    }
 }

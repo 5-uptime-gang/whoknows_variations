@@ -24,6 +24,7 @@ var (
 	GetUserByIDQuery       func(db *sql.DB, userID string) (int, string, string, string, error)
 	GetUserByUsernameQuery func(db *sql.DB, username string) (int, string, string, string, error)
 	SearchPagesQuery       func(db *sql.DB, searchTerm, language string) ([]Page, error)
+	GetUserCountQuery      func(db *sql.DB) (float64, error)
 )
 
 // ---- Real implementations ----
@@ -105,6 +106,16 @@ func realSearchPagesQuery(db *sql.DB, searchTerm, language string) ([]Page, erro
 	return pages, nil
 }
 
+func realGetUserCountQuery(db *sql.DB) (float64, error) {
+	var count float64
+	// Vi tæller bare alle rækker i users tabellen
+	err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // ---- Assign real implementations ----
 
 func init() {
@@ -113,4 +124,5 @@ func init() {
 	GetUserByIDQuery = realGetUserByIDQuery
 	GetUserByUsernameQuery = realGetUserByUsernameQuery
 	SearchPagesQuery = realSearchPagesQuery
+	GetUserCountQuery = realGetUserCountQuery
 }
