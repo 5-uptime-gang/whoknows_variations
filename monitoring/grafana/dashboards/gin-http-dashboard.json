@@ -19,25 +19,42 @@
   "panels": [
     {
       "type": "timeseries",
-      "title": "Request Rate (req/s)",
+      "title": "Avg. Response Time",
+      "gridPos": { "h": 8, "w": 24, "x": 12, "y": 0 },
+      "datasource": "Prometheus", 
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Sekunder",
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "showPoints": "never",
+            "fillOpacity": 10,
+            "lineWidth": 2
+          },
+          "unit": "s"
+        }
+      },
       "targets": [
         {
-          "expr": "sum by (method, path) (rate(http_requests_total[1m]))",
-          "legendFormat": "{{method}} {{path}}"
+          "expr": "sum(rate(http_request_duration_seconds_sum[5m])) by (method, path) / sum(rate(http_request_duration_seconds_count[5m])) by (method, path)",
+          "legendFormat": "{{method}} {{path}}",
+          "refId": "A"
         }
       ],
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
-    },
-    {
-      "type": "timeseries",
-      "title": "Request Duration (avg seconds)",
-      "targets": [
-        {
-          "expr": "sum by (method, path) (rate(http_request_duration_seconds_sum[1m])) / sum by (method, path) (rate(http_request_duration_seconds_count[1m]))",
-          "legendFormat": "{{method}} {{path}}"
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single"
         }
-      ],
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+      }
     },
     {
       "type": "bargauge",
@@ -47,7 +64,51 @@
           "expr": "sum by (status) (rate(http_requests_total[1m]))"
         }
       ],
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 }
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 8 }
+    },
+     {
+      "type": "bargauge",
+      "title": "Avg. response time on each endpoint",
+      "gridPos": { "h": 8, "w": 24, "x": 12, "y": 0 },
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.5 },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_sum{path=~\"/|/login|/register|/weather|/about|/api/weather|/api/search|/api/login|/api/register|/api/logout|/api/session\"}[5m])) by (method, path) / sum(rate(http_request_duration_seconds_count{path=~\"/|/login|/register|/weather|/about|/api/weather|/api/search|/api/login|/api/register|/api/logout|/api/session\"}[5m])) by (method, path)",
+          "legendFormat": "{{method}} {{path}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "vertical",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "text": {
+             "valueSize": 20
+        }
+      }
     },
     {
       "type": "row",
@@ -72,7 +133,7 @@
           }
         }
       },
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 15 }
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 15 }
     },
     {
       "type": "timeseries",
@@ -115,12 +176,12 @@
           }
         ]
       },
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 15 }
+      "gridPos": { "h": 6, "w": 24, "x": 16, "y": 15 }
     },
     {
       "type": "row",
       "title": "Browser & Tech (Accessibility)",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 }
+      "gridPos": { "h": 1, "w": 12, "x": 0, "y": 21 }
     },
     {
       "type": "piechart",
@@ -241,15 +302,15 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 18, "x": 0, "y": 31 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 31 },
       "timeFrom": "7d"
     },
     {
       "type": "stat",
-      "title": "Total Antal Brugere (DB)",
+      "title": "Total amount of users",
       "gridPos": {
         "h": 6,
-        "w": 6,
+        "w": 24,
         "x": 0,
         "y": 100
       },
