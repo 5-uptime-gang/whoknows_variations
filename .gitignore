@@ -229,3 +229,8 @@ __marimo__/
 
 # Go workspace file
 go.work
+
+# App runtime data
+/data/
+*.db
+
