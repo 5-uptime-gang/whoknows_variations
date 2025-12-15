@@ -19,10 +19,15 @@ func main() {
 		}
 	}()
 
-	if _, err := openDatabase(); err != nil {
+	database, err := openDatabase()
+	if err != nil {
 		log.Fatalf("Failed to open DB: %v", err)
 	}
 	defer closeDatabase()
+
+	if err := InitDB(database); err != nil {
+		log.Fatalf("Failed to initialize DB: %v", err)
+	}
 
 	go monitorUserCount(db)
 
