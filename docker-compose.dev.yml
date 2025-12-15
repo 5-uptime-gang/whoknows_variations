@@ -14,12 +14,14 @@ services:
     working_dir: /usr/src/app/src
     environment:
       - GIN_MODE=debug
+      - DATABASE_URL=postgres://whoknows:supersecret@postgres:5432/whoknows?sslmode=disable
     restart: unless-stopped
     networks:
       - appnet
     depends_on:
       - prometheus
       - grafana
+      - postgres
   
   prometheus:
     image: prom/prometheus
@@ -51,12 +53,6 @@ services:
       - appnet
     restart: unless-stopped
 
-  test:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    command: go test -v ./...
-    
   postgres:
     image: postgres:16
     container_name: whoknows_deployment_postgres_1
@@ -67,8 +63,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
+    networks:
+      - appnet
 
-  # din eksisterende whoknows service bliver som nu
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: go test -v ./...
 
 volumes:
   go-mod-cache:
