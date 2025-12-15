@@ -4,69 +4,80 @@ import (
 	"database/sql"
 	"log"
 	"time"
-
-	_ "modernc.org/sqlite"
 )
 
 func InitDB(db *sql.DB) error {
-	usersSchema := `
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT NOT NULL UNIQUE,
-		email TEXT NOT NULL UNIQUE,
-		password TEXT NOT NULL
-	);
+	// 1) Create tables (PostgreSQL types + constraints)
+	usersTable := `
+CREATE TABLE IF NOT EXISTS users (
+  id BIGSERIAL PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL
+);`
 
-	INSERT OR IGNORE INTO users (username, email, password)
-	VALUES ('admin', 'keamonk1@stud.kea.dk', '5f4dcc3b5aa765d61d8327deb882cf99');`
-
-	if _, err := db.Exec(usersSchema); err != nil {
+	if _, err := db.Exec(usersTable); err != nil {
 		return err
 	}
 
-	// Pages: create + drop
-	pagesSchema := `
-	CREATE TABLE IF NOT EXISTS pages (
-		title TEXT PRIMARY KEY UNIQUE,
-		url TEXT NOT NULL UNIQUE,
-		language TEXT NOT NULL CHECK(language IN ('en', 'da')) DEFAULT 'en',
-		last_updated TIMESTAMP,
-		content TEXT NOT NULL
-	);`
+	pagesTable := `
+CREATE TABLE IF NOT EXISTS pages (
+  title TEXT PRIMARY KEY,
+  url TEXT NOT NULL UNIQUE,
+  language TEXT NOT NULL CHECK (language IN ('en', 'da')) DEFAULT 'en',
+  last_updated TIMESTAMPTZ,
+  content TEXT NOT NULL
+);`
 
-	if _, err := db.Exec(pagesSchema); err != nil {
+	if _, err := db.Exec(pagesTable); err != nil {
 		return err
 	}
 
-	// bruger prepared statement til at indsætte dataen
-	transaction, err := db.Begin()
+	// 2) Seed admin user (SQLite: INSERT OR IGNORE -> PostgreSQL: ON CONFLICT DO NOTHING)
+	seedAdmin := `
+INSERT INTO users (username, email, password)
+VALUES ($1, $2, $3)
+ON CONFLICT (username) DO NOTHING;`
+
+	// NOTE: If you want to prevent duplicates by email as well, you can also choose:
+	// ON CONFLICT DO NOTHING
+	// but then you can't target a specific constraint/column set.
+	if _, err := db.Exec(seedAdmin, "admin", "keamonk1@stud.kea.dk", "5f4dcc3b5aa765d61d8327deb882cf99"); err != nil {
+		return err
+	}
+
+	// 3) Seed pages in a transaction
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	insertPageStmt, err := transaction.Prepare(`INSERT OR IGNORE INTO pages (title, url, language, last_updated, content) VALUES (?, ?, ?, ?, ?)`)
+	defer func() {
+		// Safety rollback if Commit is not reached
+		_ = tx.Rollback()
+	}()
+
+	insertPageStmt, err := tx.Prepare(`
+INSERT INTO pages (title, url, language, last_updated, content)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (title) DO NOTHING;`)
 	if err != nil {
-		if rbErr := transaction.Rollback(); rbErr != nil {
-			log.Printf("rollback failed: %v", rbErr)
-		}
 		return err
 	}
-
 	defer func() {
 		if err := insertPageStmt.Close(); err != nil {
 			log.Printf("stmt.Close failed: %v", err)
 		}
 	}()
 
-	seedData := getPageSeedData()
-
-	for _, page := range seedData {
-		if _, err := insertPageStmt.Exec(page.Title, page.URL, page.Language, time.Now(), page.Content); err != nil {
-			// Vi logger fejl, men fortsætter med næste række
+	now := time.Now()
+	for _, page := range getPageSeedData() {
+		if _, err := insertPageStmt.Exec(page.Title, page.URL, page.Language, now, page.Content); err != nil {
 			log.Printf("Error inserting seed data (%s): %v", page.Title, err)
+			continue
 		}
 	}
 
-	if err := transaction.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 

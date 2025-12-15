@@ -2,30 +2,40 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"time"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 var db *sql.DB
 
-func openDatabase(path string) (*sql.DB, error) {
-	dbExists := true
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		dbExists = false
+// openDatabase opens a PostgreSQL connection using DATABASE_URL.
+// Example:
+//
+//	DATABASE_URL=postgres://user:pass@postgres:5432/whoknows?sslmode=disable
+func openDatabase() (*sql.DB, error) {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		return nil, fmt.Errorf("DATABASE_URL is not set")
 	}
 
-	database, err := sql.Open("sqlite", path)
+	database, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	if !dbExists {
-		if err := InitDB(database); err != nil {
-			if cerr := database.Close(); cerr != nil {
-				log.Printf("Error closing DB after init failure: %v", cerr)
-			}
-			return nil, err
-		}
+	// Sensible pool defaults (tune later if needed)
+	database.SetMaxOpenConns(25)
+	database.SetMaxIdleConns(10)
+	database.SetConnMaxLifetime(30 * time.Minute)
+
+	// Fail fast if DB is unreachable / creds are wrong
+	if err := database.Ping(); err != nil {
+		_ = database.Close()
+		return nil, err
 	}
 
 	db = database

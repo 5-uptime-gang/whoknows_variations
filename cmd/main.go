@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	defaultDBPath  = "/usr/src/app/data/whoknows.db"
 	defaultLogPath = "/usr/src/app/data/server.log"
 )
 
@@ -20,7 +19,7 @@ func main() {
 		}
 	}()
 
-	if _, err := openDatabase(defaultDBPath); err != nil {
+	if _, err := openDatabase(); err != nil {
 		log.Fatalf("Failed to open DB: %v", err)
 	}
 	defer closeDatabase()
