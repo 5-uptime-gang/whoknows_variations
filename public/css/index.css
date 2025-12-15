@@ -97,6 +97,11 @@
   font-size: 1rem;
   color: #333;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Metadata (language + last updated) */

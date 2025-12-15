@@ -1,0 +1,25 @@
+{
+  "name": "search-ingest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "run.js",
+  "scripts": {
+    "ingest": "node src/run.js",
+    "import": "node src/import/importPages.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "jsdom": "^27.3.0",
+    "langdetect": "^0.2.1",
+    "p-limit": "^7.2.0",
+    "pg": "^8.16.3",
+    "stopword": "^3.1.5"
+  }
+}

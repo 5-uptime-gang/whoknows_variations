@@ -22,18 +22,69 @@ CREATE TABLE IF NOT EXISTS users (
 
 	pagesTable := `
 CREATE TABLE IF NOT EXISTS pages (
-  title TEXT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
   url TEXT NOT NULL UNIQUE,
   language TEXT NOT NULL CHECK (language IN ('en', 'da')) DEFAULT 'en',
   last_updated TIMESTAMPTZ,
-  content TEXT NOT NULL
+  content TEXT NOT NULL,
+  tsv_document tsvector
 );`
 
 	if _, err := db.Exec(pagesTable); err != nil {
 		return err
 	}
 
-	// 2) Seed admin user (SQLite: INSERT OR IGNORE -> PostgreSQL: ON CONFLICT DO NOTHING)
+	// 3) Enable search extensions, trigger, and indexes (idempotent)
+	ftsSetup := `
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE OR REPLACE FUNCTION pages_tsvector_update() RETURNS trigger AS $$
+BEGIN
+  NEW.tsv_document :=
+    setweight(
+      to_tsvector(
+        (CASE NEW.language WHEN 'da' THEN 'danish' ELSE 'english' END)::regconfig,
+        coalesce(NEW.title, '')
+      ),
+      'A'
+    )
+    ||
+    setweight(
+      to_tsvector(
+        (CASE NEW.language WHEN 'da' THEN 'danish' ELSE 'english' END)::regconfig,
+        coalesce(NEW.content, '')
+      ),
+      'B'
+    );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS pages_tsvector_trigger ON pages;
+
+CREATE TRIGGER pages_tsvector_trigger
+BEFORE INSERT OR UPDATE ON pages
+FOR EACH ROW EXECUTE FUNCTION pages_tsvector_update();
+
+CREATE INDEX IF NOT EXISTS idx_pages_tsv_document
+  ON pages USING GIN (tsv_document);
+
+CREATE INDEX IF NOT EXISTS idx_pages_title_trgm
+  ON pages USING GIN (title gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_pages_content_trgm
+  ON pages USING GIN (content gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_pages_last_updated
+  ON pages (last_updated DESC);
+`
+
+	if _, err := db.Exec(ftsSetup); err != nil {
+		return err
+	}
+
+	// 4) Seed admin user (SQLite: INSERT OR IGNORE -> PostgreSQL: ON CONFLICT DO NOTHING)
 	seedAdmin := `
 INSERT INTO users (username, email, password)
 VALUES ($1, $2, $3)
@@ -59,7 +110,7 @@ ON CONFLICT (username) DO NOTHING;`
 	insertPageStmt, err := tx.Prepare(`
 INSERT INTO pages (title, url, language, last_updated, content)
 VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (title) DO NOTHING;`)
+ON CONFLICT (url) DO NOTHING;`)
 	if err != nil {
 		return err
 	}

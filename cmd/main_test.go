@@ -20,7 +20,7 @@ import (
 var (
 	mockInsertUserQuery        func(*sql.DB, string, string, string) (int64, error)
 	mockGetUserByUsernameQuery func(*sql.DB, string) (int, string, string, string, error)
-	mockSearchPagesQuery       func(*sql.DB, string, string) ([]Page, error)
+	mockSearchPagesQuery       func(*sql.DB, string, string, int) ([]SearchResult, error)
 )
 
 // Patch the global functions to mocks for testing
@@ -31,8 +31,8 @@ func init() {
 	GetUserByUsernameQuery = func(db *sql.DB, u string) (int, string, string, string, error) {
 		return mockGetUserByUsernameQuery(db, u)
 	}
-	SearchPagesQuery = func(db *sql.DB, q, lang string) ([]Page, error) {
-		return mockSearchPagesQuery(db, q, lang)
+	SearchPagesQuery = func(db *sql.DB, q, lang string, limit int) ([]SearchResult, error) {
+		return mockSearchPagesQuery(db, q, lang, limit)
 	}
 }
 
@@ -204,7 +204,7 @@ func TestSearchMissingQuery(t *testing.T) {
 }
 
 func TestSearchDBError(t *testing.T) {
-	mockSearchPagesQuery = func(_ *sql.DB, q, l string) ([]Page, error) {
+	mockSearchPagesQuery = func(_ *sql.DB, q, l string, limit int) ([]SearchResult, error) {
 		return nil, errors.New("boom")
 	}
 	router := setupRouter()
@@ -218,14 +218,15 @@ func TestSearchDBError(t *testing.T) {
 }
 
 func TestSearchSuccess(t *testing.T) {
-	mockSearchPagesQuery = func(_ *sql.DB, q, l string) ([]Page, error) {
-		return []Page{
+	mockSearchPagesQuery = func(_ *sql.DB, q, l string, limit int) ([]SearchResult, error) {
+		now := time.Now()
+		return []SearchResult{
 			{
 				Title:       "hi",
 				URL:         "https://example.com",
 				Language:    "en",
-				LastUpdated: time.Now(),
-				Content:     "hello world",
+				LastUpdated: &now,
+				Snippet:     "hello world",
 			},
 		}, nil
 	}
