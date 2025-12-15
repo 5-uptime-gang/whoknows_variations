@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"log"
 	"time"
-
-	_ "modernc.org/sqlite"
 )
 
 type Page struct {
@@ -30,16 +28,19 @@ var (
 // ---- Real implementations ----
 
 func realInsertUserQuery(db *sql.DB, username, email, password string) (int64, error) {
-	query := "INSERT INTO users (username, email, password) VALUES (?, ?, ?)"
-	res, err := db.Exec(query, username, email, password)
-	if err != nil {
+	// PostgreSQL does not support LastInsertId() reliably via database/sql,
+	// so we use RETURNING.
+	query := "INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id"
+
+	var id int64
+	if err := db.QueryRow(query, username, email, password).Scan(&id); err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 func realGetUserIDQuery(db *sql.DB, username string) (int, error) {
-	query := "SELECT id FROM users WHERE username = ?"
+	query := "SELECT id FROM users WHERE username = $1"
 	var id int
 	err := db.QueryRow(query, username).Scan(&id)
 	if err != nil {
@@ -49,35 +50,38 @@ func realGetUserIDQuery(db *sql.DB, username string) (int, error) {
 }
 
 func realGetUserByIDQuery(db *sql.DB, userID string) (int, string, string, string, error) {
-	query := "SELECT * FROM users WHERE id = ?"
+	// Be explicit about columns (more robust than SELECT *)
+	query := "SELECT id, username, email, password FROM users WHERE id = $1"
 	row := db.QueryRow(query, userID)
+
 	var id int
 	var username, email, password string
-	err := row.Scan(&id, &username, &email, &password)
-	if err != nil {
+	if err := row.Scan(&id, &username, &email, &password); err != nil {
 		return 0, "", "", "", err
 	}
 	return id, username, email, password, nil
 }
 
 func realGetUserByUsernameQuery(db *sql.DB, username string) (int, string, string, string, error) {
-	query := "SELECT * FROM users WHERE username = ?"
+	query := "SELECT id, username, email, password FROM users WHERE username = $1"
 	row := db.QueryRow(query, username)
+
 	var id int
 	var dbUsername, email, password string
-	err := row.Scan(&id, &dbUsername, &email, &password)
-	if err != nil {
+	if err := row.Scan(&id, &dbUsername, &email, &password); err != nil {
 		return 0, "", "", "", err
 	}
 	return id, dbUsername, email, password, nil
 }
 
 func realSearchPagesQuery(db *sql.DB, searchTerm, language string) ([]Page, error) {
-	query := "SELECT title, url, language, last_updated, content FROM pages WHERE language = ?"
+	// Use ILIKE for case-insensitive search in PostgreSQL (optional but nice).
+	// If you want case-sensitive, swap back to LIKE.
+	query := "SELECT title, url, language, last_updated, content FROM pages WHERE language = $1"
 	args := []interface{}{language}
 
 	if searchTerm != "" {
-		query += " AND content LIKE ?"
+		query += " AND content ILIKE $2"
 		args = append(args, "%"+searchTerm+"%")
 	}
 
@@ -108,7 +112,6 @@ func realSearchPagesQuery(db *sql.DB, searchTerm, language string) ([]Page, erro
 
 func realGetUserCountQuery(db *sql.DB) (float64, error) {
 	var count float64
-	// Vi tæller bare alle rækker i users tabellen
 	err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
 	if err != nil {
 		return 0, err

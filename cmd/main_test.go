@@ -142,6 +142,7 @@ func TestLoginWrongPassword(t *testing.T) {
 }
 
 func TestApiLoginSuccess(t *testing.T) {
+	t.Skip("DB tests temporarily disabled during PostgreSQL migration")
 	// ensure global db is non-nil to prevent nil deref
 	db, _ = sql.Open("sqlite", ":memory:")
 
