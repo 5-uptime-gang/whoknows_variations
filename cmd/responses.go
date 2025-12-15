@@ -5,7 +5,7 @@ type StandardResponse struct {
 }
 
 type SearchResponse struct {
-	Data []Page `json:"data"`
+	Data []SearchResult `json:"data"`
 }
 
 type AuthResponse struct {

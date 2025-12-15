@@ -5,6 +5,7 @@
   "main": "run.js",
   "scripts": {
     "ingest": "node src/run.js",
+    "import": "node src/import/importPages.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

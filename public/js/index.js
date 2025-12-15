@@ -55,7 +55,8 @@ async function doSearch(query, language = null) {
         // Content snippet
         const desc = document.createElement("p");
         desc.className = "search-result-description";
-        desc.textContent = page.content;
+        const snippet = page.snippet || page.content || "";
+        desc.innerHTML = snippet;
 
         // Language
         const lang = document.createElement("p");
