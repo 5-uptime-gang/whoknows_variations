@@ -3,11 +3,14 @@ services:
     image: bikstok/whoknows_variations:latest
     expose:
       - "8080"
-    restart: unless-stopped # genstarter container automatisk ved crash
+    restart: unless-stopped
     environment:
       - GIN_MODE=release
+      - DATABASE_URL=postgres://whoknows:supersecret@postgres:5432/whoknows?sslmode=disable
     volumes:
       - appdata:/usr/src/app/data
+    depends_on:
+      - postgres
     networks:
       - appnet
 
@@ -20,15 +23,27 @@ services:
       - ./nginx/conf-prod:/etc/nginx/conf.d:ro
       - /etc/letsencrypt/live/femprocentoppetid.dk:/etc/letsencrypt/live/femprocentoppetid.dk
       - /etc/letsencrypt/archive/femprocentoppetid.dk:/etc/letsencrypt/archive/femprocentoppetid.dk
-    depends_on: # Sørger for at nginx først kører efter vores GO server
+    depends_on:
       - whoknows_variations
     restart: unless-stopped
-    networks: 
+    networks:
       - appnet
 
-volumes: 
-  appdata:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: whoknows
+      POSTGRES_PASSWORD: supersecret
+      POSTGRES_DB: whoknows
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - appnet
 
+volumes:
+  appdata:
+  postgres_data:
 
 networks:
   appnet:

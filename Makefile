@@ -40,7 +40,7 @@ dev:
 		exit 1; \
 	fi
 	@echo "[STARTING] Starting development environment with Air..."
-	$(DEV_COMPOSE) up --build whoknows_variations_dev nginx_dev
+	$(DEV_COMPOSE) up --build whoknows_variations_dev nginx_dev postgres
 
 .PHONY: dev-d
 dev-d:
@@ -50,7 +50,7 @@ dev-d:
 		exit 1; \
 	fi
 	@echo "[STARTING] Starting development environment with Air in detached mode..."
-	$(DEV_COMPOSE) up -d --build whoknows_variations_dev nginx_dev
+	$(DEV_COMPOSE) up -d --build whoknows_variations_dev nginx_dev postgres
 
 .PHONY: stop-dev
 stop-dev:
