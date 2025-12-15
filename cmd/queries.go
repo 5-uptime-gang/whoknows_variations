@@ -92,16 +92,16 @@ WITH fts AS (
         p.language,
         p.last_updated,
         ts_headline(
-            to_regconfig($2),
+            to_regconfig($2::text),
             p.content,
-            plainto_tsquery(to_regconfig($2), $1),
+            plainto_tsquery(to_regconfig($2::text), $1),
             'MaxFragments=2, MinWords=5, MaxWords=18, StartSel=<b>, StopSel=</b>'
         ) AS snippet,
-        ts_rank(p.tsv_document, plainto_tsquery(to_regconfig($2), $1)) +
+        ts_rank(p.tsv_document, plainto_tsquery(to_regconfig($2::text), $1)) +
         COALESCE(EXTRACT(EPOCH FROM (p.last_updated - NOW())) * 1e-8, 0) AS rank
     FROM pages p
     WHERE p.language = $4
-      AND p.tsv_document @@ plainto_tsquery(to_regconfig($2), $1)
+      AND p.tsv_document @@ plainto_tsquery(to_regconfig($2::text), $1)
     ORDER BY rank DESC, p.last_updated DESC NULLS LAST
     LIMIT $3
 ),
@@ -112,9 +112,9 @@ fallback AS (
         p.language,
         p.last_updated,
         ts_headline(
-            to_regconfig($2),
+            to_regconfig($2::text),
             p.content,
-            plainto_tsquery(to_regconfig($2), $1),
+            plainto_tsquery(to_regconfig($2::text), $1),
             'MaxFragments=2, MinWords=5, MaxWords=18, StartSel=<b>, StopSel=</b>'
         ) AS snippet,
         similarity(p.title, $1) * 1.5 + similarity(p.content, $1) AS rank
