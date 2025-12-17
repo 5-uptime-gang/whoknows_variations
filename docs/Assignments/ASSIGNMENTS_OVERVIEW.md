@@ -5,7 +5,7 @@ This document lists every assignment and reflection task in the repository so yo
 - [x] [mandatory I](00._Mandatories/mandatory_I.md)    
   Complete the first set of group assignments and submit individually.
   **Deadline:** Check Teams  ·  **Optional:** No
-- [ ] [mandatory II](00._Mandatories/mandatory_II.md)    
+- [x] [mandatory II](00._Mandatories/mandatory_II.md)    
   Complete the second set of group assignments and submit individually.  
   **Deadline:** 5. December  ·  **Optional:** No
 
@@ -110,10 +110,10 @@ This document lists every assignment and reflection task in the repository so yo
 - [x] [create a merge conflict](04._Sofware_Quality_Linting_CI/01._Before/create_a_merge_conflict.md)    
   Practice resolving an intentional merge conflict.  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [define github secrets](04._Sofware_Quality_Linting_CI/01._Before/define_github_secrets.md)    
+- [x] [define github secrets](04._Sofware_Quality_Linting_CI/01._Before/define_github_secrets.md)    
   Store secrets securely for your workflows.  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [github issue template](04._Sofware_Quality_Linting_CI/01._Before/github_issue_template.md)    
+- [x] [github issue template](04._Sofware_Quality_Linting_CI/01._Before/github_issue_template.md)    
   Create an issue template to standardize bug reports.  
   **Deadline:** None stated  ·  **Optional:** No
 - [x] [research git branching strategies](04._Sofware_Quality_Linting_CI/01._Before/research_git_branching_strategies.md)    
@@ -136,7 +136,7 @@ This document lists every assignment and reflection task in the repository so yo
 - [ ] [readme badges](04._Sofware_Quality_Linting_CI/02._After/readme_badges.md)    
   Add status and quality badges to the README.  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [software quality](04._Sofware_Quality_Linting_CI/02._After/software_quality.md)    
+- [x] [software quality](04._Sofware_Quality_Linting_CI/02._After/software_quality.md)    
   Improve software quality practices across the project.  
   **Deadline:** Same as Mandatory II  ·  **Optional:** No
 - [x] [whoknows variations continuous integration](04._Sofware_Quality_Linting_CI/02._After/whoknows_variations_continuous_integration.md)    
@@ -178,10 +178,10 @@ This document lists every assignment and reflection task in the repository so yo
 - [x] [Docker compose + Continuous delivery](06._Docker-compose_Continuous_Delivery_DevOps/02._After/docker_compose_continuous_delivery.md)    
   Setup docker compose for you project and consider how to load env.  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [Learn how to public Github Packages](06._Docker-compose_Continuous_Delivery_DevOps/02._After/whoknows_variations_continuous_delivery.md)  
+- [x] [Learn how to public Github Packages](06._Docker-compose_Continuous_Delivery_DevOps/02._After/whoknows_variations_continuous_delivery.md)  
   Lean how to public Docker packages to Github packages  
   **Deadline:** None stated  ·  **Optional:** Yes
-- [ ] [Research and pick a workflow strategy](06._Docker-compose_Continuous_Delivery_DevOps/02._After/workflow_strategies.md)    
+- [x] [Research and pick a workflow strategy](06._Docker-compose_Continuous_Delivery_DevOps/02._After/workflow_strategies.md)    
   Evaluate workflow strategies to streamline delivery.  
   **Deadline:** None stated  ·  **Optional:** No
 
@@ -204,7 +204,7 @@ This document lists every assignment and reflection task in the repository so yo
 
 ## 08. Continuous Deployment
 ### 01. Before
-- [ ] [[Optional] deploy to github pages](08._Continuous_Deployment/01._Before/deploy_to_github_pages.md)  
+- [x] [[Optional] deploy to github pages](08._Continuous_Deployment/01._Before/deploy_to_github_pages.md)  
   Publish a static site to GitHub Pages.  
   **Deadline:** None stated  ·  **Optional:** Yes
 - [ ] [github discussions](08._Continuous_Deployment/01._Before/github_discussions.md)    
@@ -218,7 +218,7 @@ This document lists every assignment and reflection task in the repository so yo
 - [x] [[Optional] continuous deployment](08._Continuous_Deployment/02._After/continuous_deployment.md)  
   Experiment with achieving full CD for the app.  
   **Deadline:** No rush  ·  **Optional:** Yes
-- [ ] [fts5](08._Continuous_Deployment/02._After/fts5.md)    
+- [x] [fts5](08._Continuous_Deployment/02._After/fts5.md)    
   Add FTS5 search capabilities to the application.  
   **Deadline:** None stated  ·  **Optional:** No
 - [ ] [hadolint](08._Continuous_Deployment/02._After/hadolint.md)    
@@ -273,13 +273,13 @@ This document lists every assignment and reflection task in the repository so yo
   **Deadline:** None stated  ·  **Optional:** No
 
 ### 02. After
-- [ ] [indexing](10._Databases_ORM_Data_scraping_Web_crawling/02._After/indexing.md)    
+- [x] [indexing](10._Databases_ORM_Data_scraping_Web_crawling/02._After/indexing.md)    
   Add indexes to improve database performance.  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [let them search](10._Databases_ORM_Data_scraping_Web_crawling/02._After/let_them_search.md)    
+- [x] [let them search](10._Databases_ORM_Data_scraping_Web_crawling/02._After/let_them_search.md)    
   Enable richer search capabilities for users.  
   **Deadline:** See the suggested timeline  ·  **Optional:** No
-- [ ] [upgrade the database](10._Databases_ORM_Data_scraping_Web_crawling/02._After/upgrade_the_database.md)    
+- [x] [upgrade the database](10._Databases_ORM_Data_scraping_Web_crawling/02._After/upgrade_the_database.md)    
   Migrate from SQLite to a more scalable database.  
   **Deadline:** None stated  ·  **Optional:** No
 
@@ -296,13 +296,13 @@ This document lists every assignment and reflection task in the repository so yo
   **Deadline:** None stated  ·  **Optional:** No
 
 ### 02. After
-- [ ] [monitoring](11._Searching_Logging_Monitoring_Serverless/02._After/monitoring.md)    
+- [x] [monitoring](11._Searching_Logging_Monitoring_Serverless/02._After/monitoring.md)    
   Instrument the system to observe key metrics.  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [monitoring PR](11._Searching_Logging_Monitoring_Serverless/02._After/monitoring_PR.md)    
+- [x] [monitoring PR](11._Searching_Logging_Monitoring_Serverless/02._After/monitoring_PR.md)    
   Submit a PR documenting your monitoring plan.  
   **Deadline:** Before the last week's lecture  ·  **Optional:** No
-- [ ] [monitoring realization](11._Searching_Logging_Monitoring_Serverless/02._After/monitoring_realization.md)    
+- [x] [monitoring realization](11._Searching_Logging_Monitoring_Serverless/02._After/monitoring_realization.md)    
   Implement the monitoring approach (part of Mandatory II).  
   **Deadline:** None stated  ·  **Optional:** No
 - [ ] [[Optional] try elk logging](11._Searching_Logging_Monitoring_Serverless/02._After/try_elk_logging.md)  
@@ -322,7 +322,7 @@ This document lists every assignment and reflection task in the repository so yo
 - [ ] [software maintenance](12._Infrastructure_as_Code/02._After/software_maintenance.md)    
   Prioritize and execute remaining maintenance tasks.  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [[Optional] whoknows variations continuous deployment](12._Infrastructure_as_Code/02._After/whoknows_variations_continuous_deployment.md)  
+- [x] [[Optional] whoknows variations continuous deployment](12._Infrastructure_as_Code/02._After/whoknows_variations_continuous_deployment.md)  
   Rapidly provision infrastructure to achieve continuous deployment.  
   **Deadline:** None stated  ·  **Optional:** Yes
 - [ ] [[Optional] your infrastructure as code](12._Infrastructure_as_Code/02._After/your_infrastructure_as_code.md)  
