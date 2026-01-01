@@ -79,4 +79,4 @@ dev-test:
 .PHONY: swagger
 swagger:
 	@echo "[GEN] Generating swagger docs..."
-	$(SWAG) init -g cmd/main.go -o docs/api --parseDependency --parseInternal --outputTypes json,yaml
+	$(SWAG) init -g cmd/main.go -o public/docs/api --parseDependency --parseInternal --outputTypes json,yaml

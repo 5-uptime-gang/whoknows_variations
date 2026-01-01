@@ -91,7 +91,7 @@ func serveSwaggerUI(c *gin.Context) {
     <script>
       window.onload = () => {
         SwaggerUIBundle({
-          url: '/docs/swagger.yaml',
+          url: '/docs/api/swagger.yaml',
           dom_id: '#swagger-ui'
         });
       };
