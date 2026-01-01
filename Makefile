@@ -5,6 +5,7 @@
 # ===============================
 DEV_COMPOSE = docker compose -f docker-compose.dev.yml
 AIR_FILE = .air.toml
+SWAG ?= swag
 
 # ===============================
 # Helper: check if Docker daemon is running
@@ -28,6 +29,7 @@ help:
 	@echo "  make stop-dev     Stop development environment"
 	@echo "  make reset-dev    Stop and remove dev volumes"
 	@echo "  make dev-test     Run development environment with auto-reload and tests"
+	@echo "  make swagger      Generate swagger.json/swagger.yaml from annotated handlers"
 
 # ===============================
 # Development mode (auto-reload with Air)
@@ -73,3 +75,8 @@ dev-test:
 	fi
 	@echo "[STARTING] Starting development environment with Air and tests..."
 	$(DEV_COMPOSE) run --rm test
+
+.PHONY: swagger
+swagger:
+	@echo "[GEN] Generating swagger docs..."
+	$(SWAG) init -g cmd/main.go -o docs/api --parseDependency --parseInternal --outputTypes json,yaml

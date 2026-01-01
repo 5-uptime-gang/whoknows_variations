@@ -8,6 +8,12 @@ const (
 	defaultLogPath = "/usr/src/app/data/server.log"
 )
 
+// @title WhoKnows Variations API
+// @version 1.0
+// @description Routes for pages, auth, search, metrics, and weather.
+// @BasePath /
+// @host localhost:8080
+// @schemes http
 func main() {
 	logFile, err := setupLogging(defaultLogPath)
 	if err != nil {

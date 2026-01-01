@@ -10,11 +10,30 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type LoginRequest struct {
+	Username string `form:"username" json:"username"`
+	Password string `form:"password" json:"password"`
+}
+
+type RegisterRequest struct {
+	Username  string `form:"username" json:"username"`
+	Email     string `form:"email" json:"email"`
+	Password  string `form:"password" json:"password"`
+	Password2 string `form:"password2" json:"password2"`
+}
+
+// apiLogin godoc
+// @Summary Log in and set auth cookie
+// @Tags Auth
+// @Accept json
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Param request body LoginRequest true "Credentials"
+// @Success 200 {object} AuthResponse
+// @Failure 422 {object} HTTPValidationError
+// @Router /api/login [post]
 func apiLogin(c *gin.Context) {
-	var creds struct {
-		Username string `form:"username" json:"username"`
-		Password string `form:"password" json:"password"`
-	}
+	var creds LoginRequest
 	if err := c.ShouldBind(&creds); err != nil {
 		log.Printf("[LOGIN] Invalid form data: %v", err)
 		c.JSON(422, HTTPValidationError{Detail: []ValidationError{{Loc: []any{"body", 0}, Msg: "invalid form data", Type: "validation_error"}}})
@@ -40,13 +59,18 @@ func apiLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, AuthResponse{&code, &msg})
 }
 
+// apiRegister godoc
+// @Summary Register a new user and set auth cookie
+// @Tags Auth
+// @Accept json
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Param request body RegisterRequest true "Registration payload"
+// @Success 200 {object} AuthResponse
+// @Failure 422 {object} HTTPValidationError
+// @Router /api/register [post]
 func apiRegister(c *gin.Context) {
-	var form struct {
-		Username  string `form:"username" json:"username"`
-		Email     string `form:"email" json:"email"`
-		Password  string `form:"password" json:"password"`
-		Password2 string `form:"password2" json:"password2"`
-	}
+	var form RegisterRequest
 	if err := c.ShouldBind(&form); err != nil {
 		log.Printf("[REGISTER] Invalid form data: %v", err)
 		userSignupCounter.WithLabelValues("failed").Inc()
@@ -107,6 +131,12 @@ func sendValidationError(c *gin.Context, field, msg string) {
 	})
 }
 
+// apiLogout godoc
+// @Summary Clear the auth cookie
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} AuthResponse
+// @Router /api/logout [get]
 func apiLogout(c *gin.Context) {
 	util.RemoveAuthCookie(c)
 	code := 200
@@ -115,6 +145,12 @@ func apiLogout(c *gin.Context) {
 	c.JSON(http.StatusOK, AuthResponse{&code, &msg})
 }
 
+// apiSession godoc
+// @Summary Report session state based on auth cookie
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} AuthResponse "statusCode 200 if cookie is present, 401 otherwise"
+// @Router /api/session [get]
 func apiSession(c *gin.Context) {
 	_, err := c.Cookie("user_id")
 	if err != nil {

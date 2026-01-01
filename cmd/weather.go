@@ -12,18 +12,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type wxDay struct {
+type WeatherDay struct {
 	Date string  `json:"date"`
 	TMin float64 `json:"tMin"`
 	TMax float64 `json:"tMax"`
 	Code int     `json:"code"`
 }
 
-type wxOut struct {
-	Source   string  `json:"source"`
-	Updated  string  `json:"updated"`
-	Timezone string  `json:"timezone"`
-	Days     []wxDay `json:"daily"`
+type WeatherData struct {
+	Source   string       `json:"source"`
+	Updated  string       `json:"updated"`
+	Timezone string       `json:"timezone"`
+	Days     []WeatherDay `json:"daily"`
 }
 
 type cacheEntry struct {
@@ -39,6 +39,13 @@ var (
 	}{m: make(map[string]cacheEntry)}
 )
 
+// apiWeather godoc
+// @Summary Fetch weather forecast for Copenhagen
+// @Tags Weather
+// @Produce json
+// @Success 200 {object} WeatherResponse
+// @Header 200 {string} X-Cache "Cache status: HIT/MISS/STALE/EMPTY"
+// @Router /api/weather [get]
 func apiWeather(c *gin.Context) {
 	const (
 		lat   = "55.6761" // Copenhagen
@@ -151,14 +158,14 @@ type omResp struct {
 	Timezone string `json:"timezone"`
 }
 
-func normalizeOpenMeteo(raw []byte) (wxOut, string, error) {
+func normalizeOpenMeteo(raw []byte) (WeatherData, string, error) {
 	var r omResp
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return wxOut{}, "", err
+		return WeatherData{}, "", err
 	}
-	o := wxOut{}
+	o := WeatherData{}
 	for i := range r.Daily.Time {
-		o.Days = append(o.Days, wxDay{
+		o.Days = append(o.Days, WeatherDay{
 			Date: r.Daily.Time[i],
 			TMin: r.Daily.TempMin[i],
 			TMax: r.Daily.TempMax[i],

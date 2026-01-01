@@ -9,6 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// apiSearch godoc
+// @Summary Search indexed pages
+// @Tags Search
+// @Produce json
+// @Param q query string true "Search query"
+// @Param language query string false "Preferred language code" Enums(da,en)
+// @Param limit query int false "Maximum results (1-50)" minimum(1) maximum(50) default(10)
+// @Success 200 {object} SearchResponse
+// @Failure 422 {object} RequestValidationError
+// @Router /api/search [get]
 func apiSearch(c *gin.Context) {
 	q := strings.TrimSpace(c.Query("q"))
 	if q == "" {

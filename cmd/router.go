@@ -6,7 +6,7 @@ func newRouter() *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery(), loggingMiddleware(), BrowserMiddleware())
 
-	router.GET("/metrics", metricsHandler())
+	router.GET("/metrics", metricsEndpoint)
 
 	api := router.Group("/api")
 	{
@@ -18,6 +18,9 @@ func newRouter() *gin.Engine {
 		api.GET("/session", apiSession)
 	}
 
+	router.GET("/docs", serveSwaggerUI)
+	router.GET("/docs/swagger.yaml", serveSwaggerSpecYaml)
+	router.GET("/docs/swagger.json", serveSwaggerSpecJSON)
 	router.GET("/", serveIndexFile)
 	router.GET("/login", serveLoginFile)
 	router.GET("/register", serveRegisterFile)

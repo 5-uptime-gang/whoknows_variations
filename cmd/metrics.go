@@ -1,11 +1,11 @@
 package main
 
 import (
-	"strings"
-	"regexp"
-	"time"
-	"log"
 	"database/sql"
+	"log"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -53,11 +53,11 @@ var (
 	versionRegex = regexp.MustCompile(`([0-9.]+[\-0-9.]*)`)
 
 	userTotalGauge = prometheus.NewGauge(
-        prometheus.GaugeOpts{
-            Name: "app_users_current_total",
-            Help: "Det nuværende antal brugere i databasen.",
-        },
-    )
+		prometheus.GaugeOpts{
+			Name: "app_users_current_total",
+			Help: "Det nuværende antal brugere i databasen.",
+		},
+	)
 )
 
 func init() {
@@ -66,6 +66,15 @@ func init() {
 
 func metricsHandler() gin.HandlerFunc {
 	return gin.WrapH(promhttp.Handler())
+}
+
+// metricsEndpoint godoc
+// @Summary Expose Prometheus metrics
+// @Tags Monitoring
+// @Success 200 {string} string "Prometheus/OpenMetrics text"
+// @Router /metrics [get]
+func metricsEndpoint(c *gin.Context) {
+	metricsHandler()(c)
 }
 
 func BrowserMiddleware() gin.HandlerFunc {
@@ -93,22 +102,22 @@ func parseUserAgent(ua string) (browser string, version string) {
 		if startIndex == -1 {
 			return "N/A"
 		}
-		
+
 		startIndex += len(key)
-		
+
 		endIndex := startIndex
 		for endIndex < len(ua) && (ua[endIndex] >= '0' && ua[endIndex] <= '9' || ua[endIndex] == '.') {
 			endIndex++
 		}
-		
+
 		v := strings.TrimSpace(ua[startIndex:endIndex])
-		
+
 		if match := versionRegex.FindString(v); match != "" {
 			return match
 		}
 		return v
 	}
-	
+
 	if strings.Contains(ua, "bot") || strings.Contains(ua, "crawler") || strings.Contains(ua, "spider") || strings.Contains(ua, "slurp") {
 		return "Bot", "N/A"
 	}
@@ -128,22 +137,22 @@ func parseUserAgent(ua string) (browser string, version string) {
 	if strings.Contains(ua, "vivaldi") {
 		return "Vivaldi", getSpecificVersion("vivaldi/")
 	}
-	
+
 	if strings.Contains(ua, "chrome") {
 		return "Chrome", getSpecificVersion("chrome/")
 	}
-	
+
 	if strings.Contains(ua, "firefox") {
 		return "Firefox", getSpecificVersion("firefox/")
 	}
-	
+
 	if strings.Contains(ua, "safari") && !strings.Contains(ua, "android") {
 		if v := getSpecificVersion("version/"); v != "N/A" {
 			return "Safari (Desktop)", v
 		}
 		return "Safari (Desktop)", getSpecificVersion("safari/")
 	}
-	
+
 	if strings.Contains(ua, "iphone") || strings.Contains(ua, "ipad") {
 		return "Safari on iOS", getSpecificVersion("version/")
 	}
@@ -159,16 +168,16 @@ func parseUserAgent(ua string) (browser string, version string) {
 }
 
 func monitorUserCount(db *sql.DB) {
-    ticker := time.NewTicker(15 * time.Second)
-    defer ticker.Stop()
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
 
-    for range ticker.C {
+	for range ticker.C {
 
-        count, err := GetUserCountQuery(db) 
-        if err != nil {
-            log.Printf("Fejl ved tælling af brugere: %v", err)
-            continue
-        }
-        userTotalGauge.Set(count)
-    }
+		count, err := GetUserCountQuery(db)
+		if err != nil {
+			log.Printf("Fejl ved tælling af brugere: %v", err)
+			continue
+		}
+		userTotalGauge.Set(count)
+	}
 }

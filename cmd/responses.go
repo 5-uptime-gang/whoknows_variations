@@ -4,6 +4,11 @@ type StandardResponse struct {
 	Data any `json:"data"`
 }
 
+// WeatherResponse documents the weather API payload.
+type WeatherResponse struct {
+	Data WeatherData `json:"data"`
+}
+
 type SearchResponse struct {
 	Data []SearchResult `json:"data"`
 }

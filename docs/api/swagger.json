@@ -1,0 +1,563 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Routes for pages, auth, search, metrics, and weather.",
+        "title": "WhoKnows Variations API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "get": {
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Serve index page",
+                "responses": {
+                    "200": {
+                        "description": "HTML page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/about": {
+            "get": {
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Serve about page",
+                "responses": {
+                    "200": {
+                        "description": "HTML page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/login": {
+            "post": {
+                "consumes": [
+                    "application/json",
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Log in and set auth cookie",
+                "parameters": [
+                    {
+                        "description": "Credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cmd.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.AuthResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.HTTPValidationError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/logout": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Clear the auth cookie",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/register": {
+            "post": {
+                "consumes": [
+                    "application/json",
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register a new user and set auth cookie",
+                "parameters": [
+                    {
+                        "description": "Registration payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cmd.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.AuthResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.HTTPValidationError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/search": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Search"
+                ],
+                "summary": "Search indexed pages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "da",
+                            "en"
+                        ],
+                        "type": "string",
+                        "description": "Preferred language code",
+                        "name": "language",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Maximum results (1-50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.SearchResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.RequestValidationError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/session": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Report session state based on auth cookie",
+                "responses": {
+                    "200": {
+                        "description": "statusCode 200 if cookie is present, 401 otherwise",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/weather": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Weather"
+                ],
+                "summary": "Fetch weather forecast for Copenhagen",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cmd.WeatherResponse"
+                        },
+                        "headers": {
+                            "X-Cache": {
+                                "type": "string",
+                                "description": "Cache status: HIT/MISS/STALE/EMPTY"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/docs": {
+            "get": {
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Interactive Swagger UI",
+                "responses": {
+                    "200": {
+                        "description": "Swagger UI",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/docs/swagger.json": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Serve generated Swagger spec (JSON)",
+                "responses": {
+                    "200": {
+                        "description": "swagger.json",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/docs/swagger.yaml": {
+            "get": {
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Docs"
+                ],
+                "summary": "Serve generated Swagger spec (YAML)",
+                "responses": {
+                    "200": {
+                        "description": "swagger.yaml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "get": {
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Serve login page",
+                "responses": {
+                    "200": {
+                        "description": "HTML page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics": {
+            "get": {
+                "tags": [
+                    "Monitoring"
+                ],
+                "summary": "Expose Prometheus metrics",
+                "responses": {
+                    "200": {
+                        "description": "Prometheus/OpenMetrics text",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/{filepath}": {
+            "get": {
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Assets"
+                ],
+                "summary": "Serve static assets",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset path under /public (e.g. css/main.css)",
+                        "name": "filepath",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Static asset bytes",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "get": {
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Serve registration page",
+                "responses": {
+                    "200": {
+                        "description": "HTML page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/weather": {
+            "get": {
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Serve weather page",
+                "responses": {
+                    "200": {
+                        "description": "HTML page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "cmd.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "statusCode": {
+                    "type": "integer"
+                }
+            }
+        },
+        "cmd.HTTPValidationError": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cmd.ValidationError"
+                    }
+                }
+            }
+        },
+        "cmd.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "cmd.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "password2": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "cmd.RequestValidationError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "default": 422
+                }
+            }
+        },
+        "cmd.SearchResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cmd.SearchResult"
+                    }
+                }
+            }
+        },
+        "cmd.SearchResult": {
+            "type": "object",
+            "properties": {
+                "language": {
+                    "type": "string"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "snippet": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "cmd.ValidationError": {
+            "type": "object",
+            "properties": {
+                "loc": {
+                    "type": "array",
+                    "items": {}
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "cmd.WeatherData": {
+            "type": "object",
+            "properties": {
+                "daily": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cmd.WeatherDay"
+                    }
+                },
+                "source": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "updated": {
+                    "type": "string"
+                }
+            }
+        },
+        "cmd.WeatherDay": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "tMax": {
+                    "type": "number"
+                },
+                "tMin": {
+                    "type": "number"
+                }
+            }
+        },
+        "cmd.WeatherResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/cmd.WeatherData"
+                }
+            }
+        }
+    }
+}

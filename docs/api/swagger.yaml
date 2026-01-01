@@ -1,0 +1,363 @@
+basePath: /
+definitions:
+  cmd.AuthResponse:
+    properties:
+      message:
+        type: string
+      statusCode:
+        type: integer
+    type: object
+  cmd.HTTPValidationError:
+    properties:
+      detail:
+        items:
+          $ref: '#/definitions/cmd.ValidationError'
+        type: array
+    type: object
+  cmd.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  cmd.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      password2:
+        type: string
+      username:
+        type: string
+    type: object
+  cmd.RequestValidationError:
+    properties:
+      message:
+        type: string
+      statusCode:
+        default: 422
+        type: integer
+    type: object
+  cmd.SearchResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/cmd.SearchResult'
+        type: array
+    type: object
+  cmd.SearchResult:
+    properties:
+      language:
+        type: string
+      last_updated:
+        type: string
+      snippet:
+        type: string
+      title:
+        type: string
+      url:
+        type: string
+    type: object
+  cmd.ValidationError:
+    properties:
+      loc:
+        items: {}
+        type: array
+      msg:
+        type: string
+      type:
+        type: string
+    type: object
+  cmd.WeatherData:
+    properties:
+      daily:
+        items:
+          $ref: '#/definitions/cmd.WeatherDay'
+        type: array
+      source:
+        type: string
+      timezone:
+        type: string
+      updated:
+        type: string
+    type: object
+  cmd.WeatherDay:
+    properties:
+      code:
+        type: integer
+      date:
+        type: string
+      tMax:
+        type: number
+      tMin:
+        type: number
+    type: object
+  cmd.WeatherResponse:
+    properties:
+      data:
+        $ref: '#/definitions/cmd.WeatherData'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Routes for pages, auth, search, metrics, and weather.
+  title: WhoKnows Variations API
+  version: "1.0"
+paths:
+  /:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+          schema:
+            type: string
+      summary: Serve index page
+      tags:
+      - Pages
+  /about:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+          schema:
+            type: string
+      summary: Serve about page
+      tags:
+      - Pages
+  /api/login:
+    post:
+      consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cmd.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cmd.AuthResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/cmd.HTTPValidationError'
+      summary: Log in and set auth cookie
+      tags:
+      - Auth
+  /api/logout:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cmd.AuthResponse'
+      summary: Clear the auth cookie
+      tags:
+      - Auth
+  /api/register:
+    post:
+      consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+      parameters:
+      - description: Registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cmd.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cmd.AuthResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/cmd.HTTPValidationError'
+      summary: Register a new user and set auth cookie
+      tags:
+      - Auth
+  /api/search:
+    get:
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: Preferred language code
+        enum:
+        - da
+        - en
+        in: query
+        name: language
+        type: string
+      - default: 10
+        description: Maximum results (1-50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cmd.SearchResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/cmd.RequestValidationError'
+      summary: Search indexed pages
+      tags:
+      - Search
+  /api/session:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: statusCode 200 if cookie is present, 401 otherwise
+          schema:
+            $ref: '#/definitions/cmd.AuthResponse'
+      summary: Report session state based on auth cookie
+      tags:
+      - Auth
+  /api/weather:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            X-Cache:
+              description: 'Cache status: HIT/MISS/STALE/EMPTY'
+              type: string
+          schema:
+            $ref: '#/definitions/cmd.WeatherResponse'
+      summary: Fetch weather forecast for Copenhagen
+      tags:
+      - Weather
+  /docs:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: Swagger UI
+          schema:
+            type: string
+      summary: Interactive Swagger UI
+      tags:
+      - Docs
+  /docs/swagger.json:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: swagger.json
+          schema:
+            type: string
+      summary: Serve generated Swagger spec (JSON)
+      tags:
+      - Docs
+  /docs/swagger.yaml:
+    get:
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: swagger.yaml
+          schema:
+            type: string
+      summary: Serve generated Swagger spec (YAML)
+      tags:
+      - Docs
+  /login:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+          schema:
+            type: string
+      summary: Serve login page
+      tags:
+      - Pages
+  /metrics:
+    get:
+      responses:
+        "200":
+          description: Prometheus/OpenMetrics text
+          schema:
+            type: string
+      summary: Expose Prometheus metrics
+      tags:
+      - Monitoring
+  /public/{filepath}:
+    get:
+      parameters:
+      - description: Asset path under /public (e.g. css/main.css)
+        in: path
+        name: filepath
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Static asset bytes
+          schema:
+            type: string
+      summary: Serve static assets
+      tags:
+      - Assets
+  /register:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+          schema:
+            type: string
+      summary: Serve registration page
+      tags:
+      - Pages
+  /weather:
+    get:
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+          schema:
+            type: string
+      summary: Serve weather page
+      tags:
+      - Pages
+schemes:
+- http
+swagger: "2.0"
