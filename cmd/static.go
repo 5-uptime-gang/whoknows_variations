@@ -53,7 +53,7 @@ func serveAboutFile(c *gin.Context) { serveHTML(c, "./public/about.html") }
 // @Param filepath path string true "Asset path under /public (e.g. css/main.css)"
 // @Success 200 {string} string "Static asset bytes"
 // @Router /public/{filepath} [get]
-func staticAssetsDoc() {}
+func staticAssetsDoc() {} //nolint:unused // documentation stub for Swagger/OpenAPI generation
 
 // serveSwaggerSpecYaml godoc
 // @Summary Serve generated Swagger spec (YAML)

@@ -94,8 +94,8 @@ func BrowserMiddleware() gin.HandlerFunc {
 }
 
 func parseUserAgent(ua string) (browser string, version string) {
+	const defaultVersion = "N/A"
 	ua = strings.ToLower(ua)
-	version = "N/A"
 
 	getSpecificVersion := func(key string) string {
 		startIndex := strings.Index(ua, key)
@@ -119,10 +119,10 @@ func parseUserAgent(ua string) (browser string, version string) {
 	}
 
 	if strings.Contains(ua, "bot") || strings.Contains(ua, "crawler") || strings.Contains(ua, "spider") || strings.Contains(ua, "slurp") {
-		return "Bot", "N/A"
+		return "Bot", defaultVersion
 	}
 	if strings.Contains(ua, "curl") || strings.Contains(ua, "wget") || strings.Contains(ua, "postman") {
-		return "Dev Tools", "N/A"
+		return "Dev Tools", defaultVersion
 	}
 
 	if strings.Contains(ua, "edg/") {
@@ -164,7 +164,7 @@ func parseUserAgent(ua string) (browser string, version string) {
 		return "Internet Explorer", getSpecificVersion("msie ")
 	}
 
-	return "Other", "N/A"
+	return "Other", defaultVersion
 }
 
 func monitorUserCount(db *sql.DB) {
