@@ -69,10 +69,10 @@ This document lists every assignment and reflection task in the repository so yo
 - [x] [commence the rewrite](02._Conventions_OpenAPI_DotEnv/02._After/commence_the_rewrite.md)    
   Commence the rewrite of the legacy project to another language  
   **Deadline:** None stated  ·  **Optional:** No
-- [ ] [[Optional] generate openapi spec in postman](02._Conventions_OpenAPI_DotEnv/02._After/generate_openapi_spec_in_postman.md)  
+- [x] [[Optional] generate openapi spec in postman](02._Conventions_OpenAPI_DotEnv/02._After/generate_openapi_spec_in_postman.md)  
   Produce an OpenAPI spec from Postman collections.  
   **Deadline:** None stated  ·  **Optional:** Yes
-- [ ] [generate openapi specification](02._Conventions_OpenAPI_DotEnv/02._After/generate_openapi_specification.md)    
+- [x] [generate openapi specification](02._Conventions_OpenAPI_DotEnv/02._After/generate_openapi_specification.md)    
   Create a formal OpenAPI specification for the service.  
   **Deadline:** None stated  ·  **Optional:** No
 - [x] [kanban github project](02._Conventions_OpenAPI_DotEnv/02._After/kanban_github_project.md)    
