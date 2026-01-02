@@ -21,7 +21,7 @@
       "type": "timeseries",
       "title": "Avg. Response Time",
       "gridPos": { "h": 8, "w": 24, "x": 12, "y": 0 },
-      "datasource": "Prometheus", 
+      "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -66,7 +66,7 @@
       ],
       "gridPos": { "h": 6, "w": 24, "x": 0, "y": 8 }
     },
-     {
+    {
       "type": "bargauge",
       "title": "Avg. response time on each endpoint",
       "gridPos": { "h": 8, "w": 24, "x": 12, "y": 0 },
@@ -100,13 +100,11 @@
         "showUnfilled": true,
         "reduceOptions": {
           "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": ""
         },
         "text": {
-             "valueSize": 20
+          "valueSize": 20
         }
       }
     },
@@ -207,37 +205,54 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
     },
     {
-      "type": "bargauge",
-      "title": "Top 5 Search Queries (Hits)",
+      "type": "piechart",
+      "title": "Top 5 Search Queries (Distribution)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "datasource": "Prometheus",
       "targets": [
         {
           "expr": "topk(5, app_search_queries_total)",
-          "legendFormat": "{{query}}"
+          "legendFormat": "{{query}}",
+          "instant": true,
+          "refId": "A"
         }
       ],
       "options": {
-        "displayMode": "lcd",
-        "orientation": "horizontal",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "valueOptions": {
-          "unit": "short",
-          "prefix": "",
-          "suffix": " hits"
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
         },
-        "max": 0,
-        "min": 0
+        "pieType": "donut",
+        "tooltip": {
+          "mode": "single",
+          "sort": "desc"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "values": ["value"]
+        },
+        "displayLabels": ["name", "value"]
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          }
-        }
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            }
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": []
+      }
     },
     {
       "type": "row",
@@ -325,9 +340,7 @@
       "options": {
         "reduceOptions": {
           "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": ""
         },
         "orientation": "auto",
