@@ -39,3 +39,7 @@ Dog gælder følgende "Inverse Compensation": Hvis systemet mod forventning opn�
 
 Udsende en offentlig undskyldning.
 Manuelt genstarte serveren midt i åbningstiden for at genoprette balancen.
+
+Dette projekt er udarbejdet som et skoleprojekt med det primære formål at lære og have det sjovt. Vores gennemgående "brand identitet" og de satiriske elementer i denne SLA er valgt for at understøtte læringsprocessen med humor. 
+
+Vi gør opmærksom på, at servicen vil blive lukket ned umiddelbart efter eksamen, hvilket vi mener retfærdiggør den lette tone og de "høhø"-elementer, der indgår i beskrivelsen af oppetid og drift.
