@@ -1,0 +1,46 @@
+name: Hadolint
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/Dockerfile"
+      - "**/Dockerfile.*"
+      - "Dockerfile"
+      - "Dockerfile.*"
+
+jobs:
+  hadolint:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint Dockerfiles
+        id: hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true
+
+      - name: Comment with Hadolint results
+        if: ${{ github.event_name == 'pull_request' && always() }}
+        uses: actions/github-script@v6
+        env:
+          HADOLINT_RESULTS: ${{ env.HADOLINT_RESULTS }}
+        with:
+          script: |
+            const output = `
+            #### Hadolint: \`${{ steps.hadolint.outcome }}\`
+            \`\`\`
+            ${process.env.HADOLINT_RESULTS || 'No findings.'}
+            \`\`\`
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
