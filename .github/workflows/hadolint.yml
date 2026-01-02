@@ -13,6 +13,10 @@ jobs:
   hadolint:
     name: Lint Dockerfiles
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,11 +25,11 @@ jobs:
         id: hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: Dockerfile
+          dockerfile: "Dockerfile*"
           recursive: true
 
       - name: Comment with Hadolint results
-        if: ${{ github.event_name == 'pull_request' && always() }}
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v6
         env:
           HADOLINT_RESULTS: ${{ env.HADOLINT_RESULTS }}
