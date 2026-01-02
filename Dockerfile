@@ -1,8 +1,6 @@
 # ---- Build stage ----
 FROM golang:1.25.0-alpine AS builder
 RUN apk add --no-cache git
-LABEL org.opencontainers.image.source="https://example.com/whoknows_variations" \
-      org.opencontainers.image.description="Build stage for whoknows variations service"
 WORKDIR /usr/src/app
 
 # Cache dependencies
