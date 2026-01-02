@@ -1,0 +1,38 @@
+name: Security Issue
+description: Report a vulnerability or security concern
+title: "[Security]: "
+labels: ["security"]
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: High-level description without sensitive details.
+      placeholder: Potential vulnerability in ...
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      placeholder: Who/what is affected? What could go wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Proof of Concept / Reproduction
+      placeholder: Steps to reproduce (omit secrets). Include minimal commands or payloads.
+    validations:
+      required: true
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested Mitigation
+      placeholder: Quick fixes or workarounds, if any.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional Details
+      placeholder: Logs, references, CVE links. Do not include secrets or private data.

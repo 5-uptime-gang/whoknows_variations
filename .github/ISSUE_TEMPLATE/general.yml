@@ -1,0 +1,28 @@
+name: General Issue
+description: For tasks or questions that do not fit other templates
+title: "[Issue]: "
+labels: []
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Briefly describe the issue or request.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      placeholder: Related links, background, or steps.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal / Expected Outcome
+      placeholder: What success looks like.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      placeholder: Optional logs, screenshots, or constraints.

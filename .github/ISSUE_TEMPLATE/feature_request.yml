@@ -1,0 +1,36 @@
+name: Feature Request
+description: Suggest an idea or improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+assignees: []
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What do you want to add or change?
+      placeholder: A clear, concise description of the request.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem To Solve
+      placeholder: What pain point or goal motivates this request?
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      placeholder: Outline your idea or approach.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      placeholder: Other options you considered.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      placeholder: Links, screenshots, or related issues.
