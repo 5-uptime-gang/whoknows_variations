@@ -1,5 +1,7 @@
 # ---- Build stage ----
 FROM golang:1.25.0-alpine AS builder
+LABEL org.opencontainers.image.source="https://example.com/whoknows_variations" \
+      org.opencontainers.image.description="Build stage for whoknows variations service"
 RUN apk add --no-cache git
 WORKDIR /usr/src/app
 
@@ -20,6 +22,8 @@ RUN go build -o /usr/local/bin/whoknows_variations ./cmd
 
 # ---- Runtime stage ----
 FROM alpine:3.20
+LABEL org.opencontainers.image.source="https://example.com/whoknows_variations" \
+      org.opencontainers.image.description="Runtime image for whoknows variations service"
 WORKDIR /usr/src/app
 
 # Create data dir (as root)
