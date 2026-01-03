@@ -46,7 +46,7 @@ jobs:
           echo "Files copied to VM"
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@7eaf76671aebc7d8b0874135e982143ea9083307
+        uses: appleboy/ssh-action@823bd89e131d8d508129f9443cad5855e9ba96f0
         with:
           host: ${{ env.VM_HOST }}
           username: ${{ env.VM_USERNAME }}
