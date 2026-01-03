@@ -46,4 +46,4 @@ jobs:
 
       - name: Images pushed
         run: |
-          echo "App image: ghcr.io/${{ github.repository_owner }}/whoknows_variations:latest"
+          echo "App image: ghcr.io/${{ secrets.DOCKERHUB_USERNAME }}/whoknows_variations:latest"
