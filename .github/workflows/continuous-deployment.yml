@@ -27,11 +27,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare production compose file
-        run: |
-          cp docker-compose.yml docker-compose.prod.yml
-          sed -i '/build: *\./d' docker-compose.prod.yml
-          echo "Created docker-compose.prod.yml with Docker Hub image references"
+      # - name: Prepare production compose file
+      #   run: |
+      #     cp docker-compose.yml docker-compose.prod.yml
+      #     sed -i '/build: *\./d' docker-compose.prod.yml
+      #     echo "Created docker-compose.prod.yml with Docker Hub image references"
 
       - name: Prepare SSH key
         run: |
