@@ -41,7 +41,7 @@ jobs:
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/docker-compose.prod.yml
           
           # Copy nginx folder recursively
-          scp -r -i key.pem -o StrictHostKeyChecking=no nginx ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/nginx
+          scp -r -i key.pem -o StrictHostKeyChecking=no nginx ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/
           
           echo "Files copied to VM"
 
