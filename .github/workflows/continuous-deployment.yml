@@ -46,14 +46,10 @@ jobs:
           echo "Files copied to VM"
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@823bd89e131d8d508129f9443cad5855e9ba96f0
-        with:
-          host: ${{ env.VM_HOST }}
-          username: ${{ env.VM_USERNAME }}
-          key: ${{ env.VM_KEY }}
-          port: 22
-          script: |
-            set -e 
+        run: |
+          # We use a Heredoc (<< 'EOF') to pass a multi-line script to the server via SSH.
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ env.VM_USERNAME }}@${{ env.VM_HOST }} << 'EOF'
+            set -e
 
             echo "Logging into Docker Hub..."
             echo "${{ env.DOCKERHUB_TOKEN }}" | sudo docker login docker.io -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin
@@ -71,3 +67,4 @@ jobs:
             sudo docker-compose -f docker-compose.prod.yml up -d
 
             echo "Deployment complete."
+          EOF
