@@ -3,52 +3,14 @@ package main
 import (
 	"bytes"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 )
-
-// --- Mock dependencies ---
-
-var (
-	mockInsertUserQuery        func(*sql.DB, string, string, string) (int64, error)
-	mockGetUserByUsernameQuery func(*sql.DB, string) (int, string, string, string, error)
-	mockSearchPagesQuery       func(*sql.DB, string, string, int) ([]SearchResult, error)
-)
-
-// Patch the global functions to mocks for testing
-func init() {
-	InsertUserQuery = func(db *sql.DB, u, e, p string) (int64, error) {
-		return mockInsertUserQuery(db, u, e, p)
-	}
-	GetUserByUsernameQuery = func(db *sql.DB, u string) (int, string, string, string, error) {
-		return mockGetUserByUsernameQuery(db, u)
-	}
-	SearchPagesQuery = func(db *sql.DB, q, lang string, limit int) ([]SearchResult, error) {
-		return mockSearchPagesQuery(db, q, lang, limit)
-	}
-}
-
-// --- Helpers ---
-
-func setupRouter() *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	return newRouter()
-}
-
-func decode[T any](t *testing.T, body []byte) T {
-	var v T
-	err := json.Unmarshal(body, &v)
-	assert.NoError(t, err)
-	return v
-}
 
 // --- /api/register ---
 
@@ -187,55 +149,4 @@ func TestLogout(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	resp := decode[AuthResponse](t, w.Body.Bytes())
 	assert.Equal(t, "logged out", *resp.Message)
-}
-
-// --- /api/search ---
-
-func TestSearchMissingQuery(t *testing.T) {
-	router := setupRouter()
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/search", nil)
-
-	router.ServeHTTP(w, req)
-	assert.Equal(t, 422, w.Code)
-	resp := decode[RequestValidationError](t, w.Body.Bytes())
-	assert.Equal(t, 422, resp.StatusCode)
-	assert.Contains(t, *resp.Message, "required")
-}
-
-func TestSearchDBError(t *testing.T) {
-	mockSearchPagesQuery = func(_ *sql.DB, q, l string, limit int) ([]SearchResult, error) {
-		return nil, errors.New("boom")
-	}
-	router := setupRouter()
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/search?q=hello", nil)
-
-	router.ServeHTTP(w, req)
-	assert.Equal(t, 422, w.Code)
-	resp := decode[RequestValidationError](t, w.Body.Bytes())
-	assert.Contains(t, *resp.Message, "Search failed")
-}
-
-func TestSearchSuccess(t *testing.T) {
-	mockSearchPagesQuery = func(_ *sql.DB, q, l string, limit int) ([]SearchResult, error) {
-		now := time.Now()
-		return []SearchResult{
-			{
-				Title:       "hi",
-				URL:         "https://example.com",
-				Language:    "en",
-				LastUpdated: &now,
-				Snippet:     "hello world",
-			},
-		}, nil
-	}
-	router := setupRouter()
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/search?q=hi", nil)
-
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
-	resp := decode[SearchResponse](t, w.Body.Bytes())
-	assert.Len(t, resp.Data, 1)
 }
