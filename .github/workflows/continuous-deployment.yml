@@ -22,27 +22,28 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # - name: Prepare production compose file
-      #   run: |
-      #     cp docker-compose.yml docker-compose.prod.yml
-      #     sed -i '/build: *\./d' docker-compose.prod.yml
-      #     echo "Created docker-compose.prod.yml with Docker Hub image references"
 
       - name: Prepare SSH key
         run: |
           echo "${{ env.VM_KEY }}" > key.pem
           chmod 600 key.pem
 
-      - name: Copy docker-compose.prod.yml to server
+      - name: Copy files to server (Compose & Nginx)
         run: |
-          mkdir -p ~/whoknows_deployment
+          # Create directory on remote
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ env.VM_USERNAME }}@${{ env.VM_HOST }} "mkdir -p ~/whoknows_deployment"
+          
+          # Copy docker-compose
           scp -i key.pem -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/docker-compose.prod.yml
-          echo "docker-compose.prod.yml copied to VM"
+          
+          # Copy nginx folder recursively
+          scp -r -i key.pem -o StrictHostKeyChecking=no nginx ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/nginx
+          
+          echo "Files copied to VM"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -52,30 +53,21 @@ jobs:
           key: ${{ env.VM_KEY }}
           port: 22
           script: |
-            set -e
+            set -e 
 
-            echo "Logging into Docker Hub on remote host..."
+            echo "Logging into Docker Hub..."
             echo "${{ env.DOCKERHUB_TOKEN }}" | sudo docker login docker.io -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin
 
             echo "Navigating to deployment directory..."
             cd ~/whoknows_deployment
 
-            # Check if nginx folder exists, copy if not
-            if [ ! -d "nginx" ]; then
-              echo "nginx folder not found. Copying from GitHub repo..."
-              scp -r -i key.pem -o StrictHostKeyChecking=no ${{ github.workspace }}/nginx ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/nginx
-              echo "nginx folder copied."
-            else
-              echo "nginx folder exists, skipping copy."
-            fi
-
             echo "Pulling latest Docker images..."
-            sudo -E docker-compose -f docker-compose.prod.yml pull
+            sudo docker-compose -f docker-compose.prod.yml pull
 
-            echo "Stopping older containers (if any)..."
+            echo "Stopping older containers..."
             sudo docker-compose -f docker-compose.prod.yml down --remove-orphans || true
 
             echo "Starting containers..."
-            sudo -E docker-compose -f docker-compose.prod.yml up -d
+            sudo docker-compose -f docker-compose.prod.yml up -d
 
             echo "Deployment complete."
