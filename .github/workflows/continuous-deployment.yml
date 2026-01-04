@@ -13,6 +13,11 @@ env:
   VM_HOST: ${{ secrets.VM_HOST }}
   VM_USERNAME: ${{ secrets.VM_USERNAME }}
   VM_KEY: ${{ secrets.VM_KEY }}
+  GIN_MODE: ${{ secrets.GIN_MODE }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
 
 permissions:
   contents: read
@@ -45,10 +50,35 @@ jobs:
           
           echo "Files copied to VM"
 
+      - name: Upload environment file
+        run: |
+          if [ -z "${{ env.DATABASE_URL }}" ]; then
+            echo "DATABASE_URL secret is required" >&2
+            exit 1
+          fi
+
+          if [ -z "${{ env.POSTGRES_PASSWORD }}" ]; then
+            echo "POSTGRES_PASSWORD secret is required" >&2
+            exit 1
+          fi
+
+          cat > .env <<EOF
+            GIN_MODE=${{ env.GIN_MODE || 'release' }}
+            DATABASE_URL=${{ env.DATABASE_URL }}
+            POSTGRES_USER=${{ env.POSTGRES_USER || 'whoknows' }}
+            POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ env.POSTGRES_DB || 'whoknows' }}
+          EOF
+
+          scp -i key.pem -o StrictHostKeyChecking=no .env ${{ env.VM_USERNAME }}@${{ env.VM_HOST }}:~/whoknows_deployment/.env
+          rm .env
+
+          echo ".env uploaded to VM"
+
       - name: Deploy via SSH
         run: |
-          # We use a Heredoc (<< 'EOF') to pass a multi-line script to the server via SSH.
-          ssh -i key.pem -o StrictHostKeyChecking=no ${{ env.VM_USERNAME }}@${{ env.VM_HOST }} << 'EOF'
+          # Pass a multi-line script to the server via SSH and expand secrets into the env file.
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ env.VM_USERNAME }}@${{ env.VM_HOST }} << EOF
             set -e
 
             echo "Logging into Docker Hub..."
@@ -58,13 +88,13 @@ jobs:
             cd ~/whoknows_deployment
 
             echo "Pulling latest Docker images..."
-            sudo docker-compose -f docker-compose.prod.yml pull
+            sudo docker-compose --env-file .env -f docker-compose.prod.yml pull
 
             echo "Stopping older containers..."
-            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+            sudo docker-compose --env-file .env -f docker-compose.prod.yml down --remove-orphans || true
 
             echo "Starting containers..."
-            sudo docker-compose -f docker-compose.prod.yml up -d
+            sudo docker-compose --env-file .env -f docker-compose.prod.yml up -d
 
             echo "Deployment complete."
           EOF

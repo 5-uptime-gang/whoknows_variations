@@ -1,12 +1,11 @@
 services:
   whoknows_variations:
     image: bikstok/whoknows_variations:latest
+    env_file:
+      - ./.env
     expose:
       - "8080"
     restart: unless-stopped
-    environment:
-      - GIN_MODE=release
-      - DATABASE_URL=postgres://whoknows:supersecret@postgres:5432/whoknows?sslmode=disable
     volumes:
       - appdata:/usr/src/app/data
     depends_on:
@@ -31,10 +30,8 @@ services:
 
   postgres:
     image: postgres:16
-    environment:
-      POSTGRES_USER: whoknows
-      POSTGRES_PASSWORD: supersecret
-      POSTGRES_DB: whoknows
+    env_file:
+      - ./.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
