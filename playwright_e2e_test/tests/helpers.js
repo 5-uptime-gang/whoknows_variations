@@ -1,11 +1,44 @@
 const { expect } = require("@playwright/test");
+const crypto = require("crypto");
+
+const DEFAULT_PASSWORD = "Pw!123456";
+const PASSWORD_SETS = {
+  lower: "abcdefghijklmnopqrstuvwxyz",
+  upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  digits: "0123456789",
+  symbols: "!@#$%^&*",
+};
+
+function buildRandomPassword(length = 12) {
+  const required = [
+    PASSWORD_SETS.lower,
+    PASSWORD_SETS.upper,
+    PASSWORD_SETS.digits,
+    PASSWORD_SETS.symbols,
+  ].map((set) => set[crypto.randomInt(0, set.length)]);
+  const all = `${PASSWORD_SETS.lower}${PASSWORD_SETS.upper}${PASSWORD_SETS.digits}${PASSWORD_SETS.symbols}`;
+  const chars = [...required];
+
+  for (let i = chars.length; i < length; i += 1) {
+    chars.push(all[crypto.randomInt(0, all.length)]);
+  }
+
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const j = crypto.randomInt(0, i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join("");
+}
 
 function uniqueUser() {
   const slug = `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+  const password =
+    process.env.NODE_ENV === "production" ? buildRandomPassword() : DEFAULT_PASSWORD;
   return {
     username: `pw-user-${slug}`,
     email: `pw-user-${slug}@example.com`,
-    password: "Pw!123456",
+    password,
   };
 }
 

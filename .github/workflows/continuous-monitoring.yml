@@ -34,7 +34,7 @@ jobs:
           # B. Kopier monitoring mappen
           scp -i key.pem -o StrictHostKeyChecking=no -r monitoring $USERNAME@$HOST:$TARGET_DIR/
           
-          echo "✅ Filer kopieret succesfuldt."
+          echo "Files copied successful"
 
 
       - name: Restart Grafana and Prometheus
